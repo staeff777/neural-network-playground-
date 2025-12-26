@@ -1,0 +1,88 @@
+import { useRef, useEffect } from 'preact/hooks';
+
+export function TrainingVisualizer({ history, currentStepIndex }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !history || history.length === 0) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const padding = 40;
+
+    // Clear
+    ctx.clearRect(0, 0, width, height);
+
+    // Find Scales
+    const maxError = Math.max(...history.map(h => h.error));
+    // Min error usually 0
+    const minWeight = history[0].weight;
+    const maxWeight = history[history.length - 1].weight;
+
+    const mapX = (w) => padding + (w - minWeight) / (maxWeight - minWeight) * (width - 2 * padding);
+    const mapY = (e) => height - padding - (e / maxError) * (height - 2 * padding);
+
+    // Draw Axes
+    ctx.beginPath();
+    ctx.strokeStyle = '#333';
+    ctx.setLineDash([]);
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#333';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Weight (Geschwindigkeit)', width / 2, height - 10);
+    ctx.save();
+    ctx.translate(15, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Error (MSE)', 0, 0);
+    ctx.restore();
+
+    // Draw Curve
+    ctx.beginPath();
+    ctx.strokeStyle = '#3498db';
+    ctx.lineWidth = 2;
+    history.forEach((point, i) => {
+      const x = mapX(point.weight);
+      const y = mapY(point.error);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Draw Current Scan Point (if scanning)
+    if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex < history.length) {
+      const point = history[currentStepIndex];
+      const cx = mapX(point.weight);
+      const cy = mapY(point.error);
+
+      ctx.beginPath();
+      ctx.fillStyle = '#e74c3c';
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tooltip
+      ctx.fillStyle = '#000';
+      ctx.fillText(`w: ${point.weight}`, cx, cy - 15);
+      ctx.fillText(`err: ${point.error.toFixed(1)}`, cx, cy - 25);
+    }
+
+  }, [history, currentStepIndex]);
+
+  return (
+    <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
+      <h3>Training Visualisierung (Exhaustive Search)</h3>
+      <canvas
+        ref={canvasRef}
+        width={600}
+        height={300}
+        style={{ width: '100%' }}
+      />
+    </div>
+  );
+}
