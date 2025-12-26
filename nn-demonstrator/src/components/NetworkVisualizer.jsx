@@ -1,4 +1,4 @@
-export function NetworkVisualizer({ input, weight, output }) {
+export function NetworkVisualizer({ input, weight, bias, output }) {
   // Simple layout
   // Input (50, 50) -> Output (250, 50)
 
@@ -10,7 +10,7 @@ export function NetworkVisualizer({ input, weight, output }) {
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff', textAlign: 'center' }}>
       <h3>Modell Architektur</h3>
-      <svg width="350" height="160" style={{ overflow: 'visible' }}>
+      <svg width="350" height="200" style={{ overflow: 'visible' }}>
         {/* Definition for arrow marker */}
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
@@ -18,10 +18,19 @@ export function NetworkVisualizer({ input, weight, output }) {
           </marker>
         </defs>
 
-        {/* Connection Line */}
+        {/* Connection Line (Weight) */}
         <line
           x1={inputX} y1={y}
           x2={outputX} y2={y}
+          stroke="#333"
+          strokeWidth="2"
+          markerEnd="url(#arrowhead)"
+        />
+
+        {/* Bias Connection (from a bias node/point to output) */}
+        <line
+          x1={outputX} y1={y + 60}
+          x2={outputX} y2={y + circleRadius}
           stroke="#333"
           strokeWidth="2"
           markerEnd="url(#arrowhead)"
@@ -47,15 +56,22 @@ export function NetworkVisualizer({ input, weight, output }) {
         <text x={inputX} y={y + 45} textAnchor="middle" fontSize="12" fill="#555">Zeit (t)</text>
         <text x={inputX} y={y + 60} textAnchor="middle" fontSize="14" fill="#333" fontWeight="bold">{input.toFixed(2)}</text>
 
+        {/* Bias Label */}
+         <text x={outputX + 15} y={y + 80} textAnchor="start" dominantBaseline="middle" fill="#2980b9" fontSize="12" fontWeight="bold">
+          b: {bias ? bias.toFixed(2) : "0.00"}
+        </text>
+        <circle cx={outputX} cy={y + 80} r={5} fill="#2980b9" />
+
+
         {/* Output Node */}
         <circle cx={outputX} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" />
         <text x={outputX} y={y} textAnchor="middle" dominantBaseline="middle" fontWeight="bold">Output</text>
-        <text x={outputX} y={y + 45} textAnchor="middle" fontSize="12" fill="#555">Pos (m)</text>
-        <text x={outputX} y={y + 60} textAnchor="middle" fontSize="14" fill="#333" fontWeight="bold">{output.toFixed(2)}</text>
+        <text x={outputX} y={y - 45} textAnchor="middle" fontSize="12" fill="#555">Pos (m)</text>
+        <text x={outputX} y={y - 60} textAnchor="middle" fontSize="14" fill="#333" fontWeight="bold">{output.toFixed(2)}</text>
 
         {/* Equation */}
-        <text x={175} y={140} textAnchor="middle" fontSize="14" fontStyle="italic" fill="#777">
-          pos = w * t
+        <text x={175} y={180} textAnchor="middle" fontSize="14" fontStyle="italic" fill="#777">
+          pos = w * t + b
         </text>
       </svg>
     </div>

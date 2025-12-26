@@ -17,10 +17,10 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
     // Find Scales
     const maxError = Math.max(...history.map(h => h.error));
     // Min error usually 0
-    const minWeight = history[0].weight;
-    const maxWeight = history[history.length - 1].weight;
+    // X axis is now just the index
+    const totalSteps = history.length;
 
-    const mapX = (w) => padding + (w - minWeight) / (maxWeight - minWeight) * (width - 2 * padding);
+    const mapX = (i) => padding + (i / totalSteps) * (width - 2 * padding);
     const mapY = (e) => height - padding - (e / maxError) * (height - 2 * padding);
 
     // Draw Axes
@@ -36,7 +36,7 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
     ctx.fillStyle = '#333';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Weight (Geschwindigkeit)', width / 2, height - 10);
+    ctx.fillText('Iteration (Search Step)', width / 2, height - 10);
     ctx.save();
     ctx.translate(15, height / 2);
     ctx.rotate(-Math.PI / 2);
@@ -54,7 +54,7 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
 
     for (let i = 0; i <= limit; i++) {
       const point = history[i];
-      const x = mapX(point.weight);
+      const x = mapX(i);
       const y = mapY(point.error);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
@@ -64,7 +64,7 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
     // Draw Current Scan Point (if scanning)
     if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex < history.length) {
       const point = history[currentStepIndex];
-      const cx = mapX(point.weight);
+      const cx = mapX(currentStepIndex);
       const cy = mapY(point.error);
 
       // Draw Guide Line to Y Axis
@@ -93,8 +93,8 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
       ctx.textAlign = 'center'; // Restore alignment for tooltip
       ctx.font = '12px sans-serif';
 
-      // Just show Weight and Mean Delta, MSE is on axis
-      ctx.fillText(`w: ${point.weight}`, cx, cy - 25);
+      // Show current params being tested
+      ctx.fillText(`w: ${point.weight}, b: ${point.bias}`, cx, cy - 25);
       if (point.mae !== undefined) {
         ctx.fillText(`mean delta: ${point.mae.toFixed(1)}`, cx, cy - 10);
       }
