@@ -2,7 +2,8 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main", "master"]
+    branches-ignore:
+      - gh-pages
   workflow_dispatch:
 
 permissions:
@@ -18,7 +19,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout Source
         uses: actions/checkout@v4
         with:
           path: src
@@ -46,6 +47,8 @@ jobs:
         continue-on-error: true
 
       - name: Update State and Prepare Artifact
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           # Configure Git
           git config --global user.name "github-actions[bot]"
@@ -60,27 +63,26 @@ jobs:
             cd ..
           else
             cd state
-            # Ensure we are on the branch (actions/checkout leaves detached head sometimes? No, it's fine)
-            # But if we want to push, we should be on a branch
-            # actions/checkout checks out the commit. We need to reset to branch tip or just work on top.
-            # Simpler: just work on top of HEAD.
+            # Ensure we are on the branch
             cd ..
           fi
 
-          # Copy build to main and latest
-          mkdir -p state/main
-          mkdir -p state/latest
+          echo "Deploying branch: $BRANCH_NAME"
 
-          # Clean existing content in target dirs to avoid stale files
-          # Re-create directories to ensure emptiness safely
-          rm -rf state/main
-          rm -rf state/latest
-          mkdir -p state/main
-          mkdir -p state/latest
+          if [ "$BRANCH_NAME" = "main" ] || [ "$BRANCH_NAME" = "master" ]; then
+            TARGET_DIR="state/main"
+          else
+            TARGET_DIR="state/latest"
+          fi
+
+          echo "Target directory: $TARGET_DIR"
+
+          # Clean existing content in target dir
+          rm -rf "$TARGET_DIR"
+          mkdir -p "$TARGET_DIR"
 
           # Copy new content
-          cp -r src/nn-demonstrator/dist/* state/main/
-          cp -r src/nn-demonstrator/dist/* state/latest/
+          cp -r src/nn-demonstrator/dist/* "$TARGET_DIR"/
 
           # Commit and Push
           cd state
@@ -88,7 +90,7 @@ jobs:
           if git diff-index --quiet HEAD; then
             echo "No changes to commit"
           else
-            git commit -m "Deploy main and latest from ${{ github.sha }}"
+            git commit -m "Deploy $BRANCH_NAME to $TARGET_DIR from ${{ github.sha }}"
 
             # If we created a new repo/branch locally, we need to set remote
             if ! git remote | grep -q origin; then
