@@ -68,8 +68,11 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
 
       // Tooltip
       ctx.fillStyle = '#000';
-      ctx.fillText(`w: ${point.weight}`, cx, cy - 15);
-      ctx.fillText(`err: ${point.error.toFixed(1)}`, cx, cy - 25);
+      ctx.fillText(`w: ${point.weight}`, cx, cy - 35);
+      ctx.fillText(`err (MSE): ${point.error.toFixed(1)}`, cx, cy - 25);
+      if (point.mae !== undefined) {
+        ctx.fillText(`mean delta: ${point.mae.toFixed(1)}`, cx, cy - 15);
+      }
     }
 
   }, [history, currentStepIndex]);
