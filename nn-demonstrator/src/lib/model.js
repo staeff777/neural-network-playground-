@@ -38,19 +38,22 @@ export class ExhaustiveTrainer {
       w = parseFloat(w.toFixed(2));
 
       let errorSum = 0;
+      let absDiffSum = 0;
       for (const point of data) {
         const prediction = w * point.input; // Bias assumed 0 for this simplified demo
         const diff = point.target - prediction;
         errorSum += diff * diff;
+        absDiffSum += Math.abs(diff);
       }
       const mse = errorSum / data.length;
+      const mae = absDiffSum / data.length;
 
       if (mse < minError) {
         minError = mse;
         bestWeight = w;
       }
 
-      history.push({ weight: w, error: mse });
+      history.push({ weight: w, error: mse, mae });
     }
 
     return { bestWeight, history };

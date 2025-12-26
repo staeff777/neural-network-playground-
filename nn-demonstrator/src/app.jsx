@@ -20,6 +20,7 @@ export function App() {
   const [trainingHistory, setTrainingHistory] = useState([]);
   const [trainingStepIndex, setTrainingStepIndex] = useState(-1);
   const [isTraining, setIsTraining] = useState(false);
+  const [showTrainingData, setShowTrainingData] = useState(false);
   const [statusMsg, setStatusMsg] = useState('Bereit.');
 
   // Derived state for visualization
@@ -142,10 +143,36 @@ export function App() {
           onTrain={handleTrain}
           onRun={handleRun}
           onReset={handleReset}
+          onToggleData={() => setShowTrainingData(!showTrainingData)}
+          showData={showTrainingData}
           isTraining={isTraining}
           trainingStep={trainingStepIndex}
           dataCount={trainingData.length}
         />
+
+        {showTrainingData && trainingData.length > 0 && (
+          <div className="data-section" style={{ marginTop: '20px', padding: '10px', background: '#f9f9f9', border: '1px solid #ddd' }}>
+            <h3>Trainingsdaten</h3>
+            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#eee' }}>
+                    <th style={{ padding: '5px' }}>Input (Zeit)</th>
+                    <th style={{ padding: '5px' }}>Target (Position)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trainingData.map((d, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '5px' }}>{d.input.toFixed(2)}</td>
+                      <td style={{ padding: '5px' }}>{d.target.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {trainingHistory.length > 0 && (
           <div className="training-section">
