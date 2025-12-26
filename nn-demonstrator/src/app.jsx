@@ -214,6 +214,7 @@ export function App() {
             <TrainingVisualizer
               history={trainingHistory}
               currentStepIndex={trainingStepIndex}
+              isTraining={isTraining}
             />
           </div>
         )}

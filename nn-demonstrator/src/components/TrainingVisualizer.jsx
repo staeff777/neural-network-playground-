@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'preact/hooks';
 
-export function TrainingVisualizer({ history, currentStepIndex }) {
+export function TrainingVisualizer({ history, currentStepIndex, isTraining }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -46,7 +46,8 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
       ctx.textAlign = 'center';
       ctx.fillText(xLabel, offsetX + chartWidth / 2, height - 10);
 
-      // Y-Axis Label (only for left chart)
+      // Y-Axis Label (only for left chart to avoid clutter, or duplicate if needed. User asked for ticks/values)
+      // We will duplicate ticks/values. Label maybe just for left.
       if (offsetX === 0) {
         ctx.save();
         ctx.translate(15, height / 2);
@@ -70,26 +71,29 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
         ctx.stroke();
       }
 
-      // Y Ticks (5 steps) - only on left axis
-      if (offsetX === 0) {
-          ctx.textAlign = 'right';
-          for(let i=0; i<=5; i++) {
-            const val = maxError * (i/5);
-            const y = mapY(val);
-            ctx.fillText(val.toFixed(0), padding - 5, y + 3);
-             // Tick mark
-            ctx.beginPath();
-            ctx.moveTo(padding, y);
-            ctx.lineTo(padding - 4, y);
-            ctx.stroke();
-          }
+      // Y Ticks (5 steps) - Draw for BOTH charts now
+      ctx.textAlign = 'right';
+      for(let i=0; i<=5; i++) {
+        const val = maxError * (i/5);
+        const y = mapY(val);
+        // Position relative to the current chart's y-axis (which is at offsetX + padding)
+        const xTick = offsetX + padding;
+        ctx.fillText(val.toFixed(0), xTick - 5, y + 3);
+            // Tick mark
+        ctx.beginPath();
+        ctx.moveTo(xTick, y);
+        ctx.lineTo(xTick - 4, y);
+        ctx.stroke();
       }
 
       // Plot Points (Scatter projection)
-      // We plot all points up to currentStepIndex
-      const limit = (currentStepIndex !== null && currentStepIndex >= 0)
-        ? Math.min(currentStepIndex, history.length - 1)
-        : history.length - 1;
+      // If training finished, show ALL points. Else show up to current.
+      const showAll = !isTraining && history.length > 0;
+      const limit = showAll
+        ? history.length - 1
+        : (currentStepIndex !== null && currentStepIndex >= 0)
+            ? Math.min(currentStepIndex, history.length - 1)
+            : -1;
 
       ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
       for (let i = 0; i <= limit; i++) {
@@ -99,7 +103,7 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
         ctx.fillRect(x, y, 2, 2);
       }
 
-      // Highlight Current
+      // Highlight Current (or Best if finished)
       if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex < history.length) {
         const point = history[currentStepIndex];
         const cx = mapX(point[valueKey]);
@@ -113,6 +117,7 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
 
         // Tooltip
         ctx.textAlign = 'center';
+        ctx.fillStyle = '#e74c3c';
         ctx.fillText(`${point[valueKey]}`, cx, cy - 8);
       }
     };
@@ -123,7 +128,7 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
     // Draw Chart 2: Bias vs Error
     drawChart(chartWidth, 'Bias (b)', bMin, bMax, 'bias');
 
-  }, [history, currentStepIndex]);
+  }, [history, currentStepIndex, isTraining]);
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
