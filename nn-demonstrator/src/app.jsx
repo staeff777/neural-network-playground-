@@ -51,11 +51,19 @@ export function App() {
           if (next >= trainingHistory.length) {
             // Training Done
             setIsTraining(false);
-            const best = trainingHistory.reduce((prev, curr) => prev.error < curr.error ? prev : curr);
+            let bestIndex = 0;
+            let minErr = Infinity;
+            trainingHistory.forEach((h, i) => {
+              if (h.error < minErr) {
+                minErr = h.error;
+                bestIndex = i;
+              }
+            });
+            const best = trainingHistory[bestIndex];
             neuralNet.setWeight(best.weight);
             neuralNet.setBias(best.bias);
             setStatusMsg(`Training fertig! w: ${best.weight}, b: ${best.bias}`);
-            return trainingHistory.length - 1;
+            return bestIndex;
           }
           // Update model visualization
           const currentPoint = trainingHistory[next];
