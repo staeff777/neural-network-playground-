@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -17,26 +17,92 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./nn-demonstrator
     steps:
-      - name: Checkout
+      - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          path: src
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: 'npm'
-          cache-dependency-path: nn-demonstrator/package-lock.json
+          cache-dependency-path: src/nn-demonstrator/package-lock.json
+
       - name: Install dependencies
+        working-directory: ./src/nn-demonstrator
         run: npm ci
+
       - name: Build
+        working-directory: ./src/nn-demonstrator
         run: npm run build
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: state
+        continue-on-error: true
+
+      - name: Update State and Prepare Artifact
+        run: |
+          # Configure Git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Prepare state directory if it doesn't exist (orphan branch case)
+          if [ ! -d "state" ]; then
+            mkdir state
+            cd state
+            git init
+            git checkout --orphan gh-pages
+            cd ..
+          else
+            cd state
+            # Ensure we are on the branch (actions/checkout leaves detached head sometimes? No, it's fine)
+            # But if we want to push, we should be on a branch
+            # actions/checkout checks out the commit. We need to reset to branch tip or just work on top.
+            # Simpler: just work on top of HEAD.
+            cd ..
+          fi
+
+          # Copy build to main and latest
+          mkdir -p state/main
+          mkdir -p state/latest
+
+          # Clean existing content in target dirs to avoid stale files
+          # Re-create directories to ensure emptiness safely
+          rm -rf state/main
+          rm -rf state/latest
+          mkdir -p state/main
+          mkdir -p state/latest
+
+          # Copy new content
+          cp -r src/nn-demonstrator/dist/* state/main/
+          cp -r src/nn-demonstrator/dist/* state/latest/
+
+          # Commit and Push
+          cd state
+          git add .
+          if git diff-index --quiet HEAD; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy main and latest from ${{ github.sha }}"
+
+            # If we created a new repo/branch locally, we need to set remote
+            if ! git remote | grep -q origin; then
+               git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            fi
+
+            # Push to the branch. Explicit refspec ensures it works even if detached HEAD.
+            git push origin HEAD:gh-pages
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./nn-demonstrator/dist
+          path: state
 
   deploy:
     environment:
