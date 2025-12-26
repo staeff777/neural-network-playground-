@@ -14,8 +14,13 @@ export function ControlPanel({
       </button>
       <span>Datenpunkte: {dataCount}</span>
 
-      <button onClick={onTrain} disabled={isTraining || dataCount === 0}>
-        2. Trainieren (Suche)
+      <button
+        onClick={onTrain}
+        disabled={isTraining || dataCount === 0}
+        aria-busy={isTraining}
+        style={isTraining ? { cursor: 'wait' } : {}}
+      >
+        {isTraining ? 'Suche läuft...' : '2. Trainieren (Suche)'}
       </button>
 
       <button onClick={onRun} disabled={isTraining}>
