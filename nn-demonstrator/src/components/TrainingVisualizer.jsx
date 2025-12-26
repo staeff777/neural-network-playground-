@@ -43,16 +43,22 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
     ctx.fillText('Error (MSE)', 0, 0);
     ctx.restore();
 
-    // Draw Curve
+    // Draw Curve (Progressive)
     ctx.beginPath();
     ctx.strokeStyle = '#3498db';
     ctx.lineWidth = 2;
-    history.forEach((point, i) => {
+
+    const limit = (currentStepIndex !== null && currentStepIndex >= 0)
+      ? Math.min(currentStepIndex, history.length - 1)
+      : history.length - 1;
+
+    for (let i = 0; i <= limit; i++) {
+      const point = history[i];
       const x = mapX(point.weight);
       const y = mapY(point.error);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
-    });
+    }
     ctx.stroke();
 
     // Draw Current Scan Point (if scanning)
@@ -61,17 +67,36 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
       const cx = mapX(point.weight);
       const cy = mapY(point.error);
 
+      // Draw Guide Line to Y Axis
+      ctx.beginPath();
+      ctx.strokeStyle = '#e74c3c';
+      ctx.setLineDash([5, 5]);
+      ctx.moveTo(padding, cy);
+      ctx.lineTo(cx, cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw Error Value on Y Axis
+      ctx.fillStyle = '#e74c3c';
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(point.error.toFixed(1), padding - 5, cy + 4);
+
+      // Draw Point
       ctx.beginPath();
       ctx.fillStyle = '#e74c3c';
       ctx.arc(cx, cy, 6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Tooltip
+      // Tooltip (Simplified)
       ctx.fillStyle = '#000';
-      ctx.fillText(`w: ${point.weight}`, cx, cy - 35);
-      ctx.fillText(`err (MSE): ${point.error.toFixed(1)}`, cx, cy - 25);
+      ctx.textAlign = 'center'; // Restore alignment for tooltip
+      ctx.font = '12px sans-serif';
+
+      // Just show Weight and Mean Delta, MSE is on axis
+      ctx.fillText(`w: ${point.weight}`, cx, cy - 25);
       if (point.mae !== undefined) {
-        ctx.fillText(`mean delta: ${point.mae.toFixed(1)}`, cx, cy - 15);
+        ctx.fillText(`mean delta: ${point.mae.toFixed(1)}`, cx, cy - 10);
       }
     }
 
