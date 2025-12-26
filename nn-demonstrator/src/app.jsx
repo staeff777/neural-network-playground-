@@ -3,6 +3,7 @@ import { GroundTruth } from './lib/physics';
 import { SimpleNeuralNet, ExhaustiveTrainer } from './lib/model';
 import { SimulationCanvas } from './components/SimulationCanvas';
 import { TrainingVisualizer } from './components/TrainingVisualizer';
+import { NetworkVisualizer } from './components/NetworkVisualizer';
 import { ControlPanel } from './components/ControlPanel';
 import './app.css';
 
@@ -20,6 +21,12 @@ export function App() {
   const [trainingStepIndex, setTrainingStepIndex] = useState(-1);
   const [isTraining, setIsTraining] = useState(false);
   const [statusMsg, setStatusMsg] = useState('Bereit.');
+
+  // Derived state for visualization
+  // When running, 'time' updates. When training, 'neuralNet.weight' updates.
+  // We need to force update if neuralNet changes internally?
+  // Actually, during training loop, we call setTrainingStepIndex which triggers re-render.
+  // During simulation, setTime triggers re-render.
 
   // Animation Loop for Simulation
   useEffect(() => {
@@ -105,18 +112,29 @@ export function App() {
       </header>
 
       <main>
-        <div className="simulation-section">
-          <h2>Simulation</h2>
-          <SimulationCanvas
-            time={time}
-            groundTruth={groundTruth}
-            neuralNet={neuralNet}
-          />
-          <div className="stats" style={{ marginTop: '10px' }}>
-            <p><strong>Ziel-Geschwindigkeit (Ground Truth):</strong> {groundTruth.velocity} m/s</p>
-            <p><strong>Aktuelles Modell (Gewicht w):</strong> {neuralNet.weight.toFixed(2)}</p>
-            <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
-          </div>
+        <div className="top-section" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'start' }}>
+            <div className="simulation-wrapper" style={{ flex: '1 1 500px' }}>
+                <div className="simulation-section">
+                <h2>Simulation</h2>
+                <SimulationCanvas
+                    time={time}
+                    groundTruth={groundTruth}
+                    neuralNet={neuralNet}
+                />
+                <div className="stats" style={{ marginTop: '10px' }}>
+                    <p><strong>Ziel-Geschwindigkeit (Ground Truth):</strong> {groundTruth.velocity} m/s</p>
+                    <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
+                </div>
+                </div>
+            </div>
+
+            <div className="network-wrapper" style={{ flex: '0 0 350px' }}>
+                <NetworkVisualizer
+                    input={time}
+                    weight={neuralNet.weight}
+                    output={neuralNet.predict(time)}
+                />
+            </div>
         </div>
 
         <ControlPanel
