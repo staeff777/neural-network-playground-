@@ -9,7 +9,7 @@ import './app.css';
 
 export function App() {
   // Logic Objects
-  const groundTruth = useRef(new GroundTruth(30)).current;
+  const groundTruth = useRef(new GroundTruth(30, 50)).current; // Velocity 30, Start Pos 50
   const neuralNet = useRef(new SimpleNeuralNet()).current;
   const trainer = useRef(new ExhaustiveTrainer(neuralNet)).current;
 
@@ -22,12 +22,6 @@ export function App() {
   const [isTraining, setIsTraining] = useState(false);
   const [activeTab, setActiveTab] = useState('simulation');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
-
-  // Derived state for visualization
-  // When running, 'time' updates. When training, 'neuralNet.weight' updates.
-  // We need to force update if neuralNet changes internally?
-  // Actually, during training loop, we call setTrainingStepIndex which triggers re-render.
-  // During simulation, setTime triggers re-render.
 
   // Animation Loop for Simulation
   useEffect(() => {
@@ -53,20 +47,31 @@ export function App() {
     if (isTraining && trainingHistory.length > 0) {
       intervalId = setInterval(() => {
         setTrainingStepIndex(prev => {
-          const next = prev + 1;
+          const next = prev + 10; // Speed up visualization as there are many steps now
           if (next >= trainingHistory.length) {
             // Training Done
             setIsTraining(false);
-            const best = trainingHistory.reduce((prev, curr) => prev.error < curr.error ? prev : curr);
+            let bestIndex = 0;
+            let minErr = Infinity;
+            trainingHistory.forEach((h, i) => {
+              if (h.error < minErr) {
+                minErr = h.error;
+                bestIndex = i;
+              }
+            });
+            const best = trainingHistory[bestIndex];
             neuralNet.setWeight(best.weight);
-            setStatusMsg(`Training abgeschlossen! Bestes Gewicht: ${best.weight}`);
-            return prev;
+            neuralNet.setBias(best.bias);
+            setStatusMsg(`Training fertig! w: ${best.weight}, b: ${best.bias}`);
+            return bestIndex;
           }
           // Update model visualization
-          neuralNet.setWeight(trainingHistory[next].weight);
+          const currentPoint = trainingHistory[next];
+          neuralNet.setWeight(currentPoint.weight);
+          neuralNet.setBias(currentPoint.bias);
           return next;
         });
-      }, 20);
+      }, 5); // Faster updates
     }
     return () => clearInterval(intervalId);
   }, [isTraining, trainingHistory, neuralNet]);
@@ -83,9 +88,16 @@ export function App() {
 
     setIsTraining(true);
     setTrainingStepIndex(0);
-    setStatusMsg('Suche optimales Gewicht...');
+    setStatusMsg('Suche optimales Gewicht und Bias...');
 
-    const { history } = trainer.train(trainingData, 0, 60, 0.5);
+    // Run training with both ranges
+    // Weight: 0 to 60, step 1
+    // Bias: 0 to 100, step 2 (to keep iterations reasonable for demo ~60*50=3000 steps)
+    const { history } = trainer.train(
+        trainingData,
+        { min: 0, max: 60, step: 1 },
+        { min: 0, max: 100, step: 2 }
+    );
     setTrainingHistory(history);
   };
 
@@ -102,6 +114,7 @@ export function App() {
     setTrainingHistory([]);
     setTrainingStepIndex(-1);
     neuralNet.setWeight(0);
+    neuralNet.setBias(0);
     setStatusMsg('Reset durchgeführt.');
   };
 
@@ -109,7 +122,7 @@ export function App() {
     <div className="container">
       <header>
         <h1>Neural Network Demonstrator</h1>
-        <p>Phase 1: Lineare Regression (Exhaustive Search)</p>
+        <p>Phase 1: Lineare Regression (Exhaustive Search 2D)</p>
       </header>
 
       <main>
@@ -139,7 +152,7 @@ export function App() {
                           neuralNet={neuralNet}
                       />
                       <div className="stats" style={{ marginTop: '10px' }}>
-                          <p><strong>Ziel-Geschwindigkeit (Ground Truth):</strong> {groundTruth.velocity} m/s</p>
+                          <p><strong>Ziel (Ground Truth):</strong> Vel={groundTruth.velocity}, Pos0={groundTruth.initialPosition}</p>
                           <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
                       </div>
                     </>
@@ -180,6 +193,7 @@ export function App() {
                 <NetworkVisualizer
                     input={time}
                     weight={neuralNet.weight}
+                    bias={neuralNet.bias}
                     output={neuralNet.predict(time)}
                 />
             </div>
@@ -200,6 +214,7 @@ export function App() {
             <TrainingVisualizer
               history={trainingHistory}
               currentStepIndex={trainingStepIndex}
+              isTraining={isTraining}
             />
           </div>
         )}
