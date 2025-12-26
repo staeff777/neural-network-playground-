@@ -3,8 +3,6 @@ export function ControlPanel({
   onTrain,
   onRun,
   onReset,
-  onToggleData,
-  showData,
   isTraining,
   trainingStep,
   dataCount
@@ -15,12 +13,6 @@ export function ControlPanel({
         1. Trainingsdaten Generieren
       </button>
       <span>Datenpunkte: {dataCount}</span>
-
-      {dataCount > 0 && (
-        <button onClick={onToggleData} style={{ fontSize: '0.8rem', padding: '5px 10px' }}>
-          {showData ? 'Daten verbergen' : 'Daten zeigen'}
-        </button>
-      )}
 
       <button onClick={onTrain} disabled={isTraining || dataCount === 0}>
         2. Trainieren (Suche)

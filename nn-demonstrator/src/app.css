@@ -84,3 +84,33 @@ button:disabled {
     border: 1px solid #ccc;
   }
 }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  font-size: 1.1em;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+
+.tab-button.active {
+  color: #646cff;
+  border-bottom-color: #646cff;
+  font-weight: bold;
+}
+
+.tab-button:hover {
+  color: #646cff;
+}

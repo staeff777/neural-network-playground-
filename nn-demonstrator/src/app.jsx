@@ -20,7 +20,7 @@ export function App() {
   const [trainingHistory, setTrainingHistory] = useState([]);
   const [trainingStepIndex, setTrainingStepIndex] = useState(-1);
   const [isTraining, setIsTraining] = useState(false);
-  const [showTrainingData, setShowTrainingData] = useState(false);
+  const [activeTab, setActiveTab] = useState('simulation');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
 
   // Derived state for visualization
@@ -116,16 +116,63 @@ export function App() {
         <div className="top-section" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'start' }}>
             <div className="simulation-wrapper" style={{ flex: '1 1 500px' }}>
                 <div className="simulation-section">
-                <h2>Simulation</h2>
-                <SimulationCanvas
-                    time={time}
-                    groundTruth={groundTruth}
-                    neuralNet={neuralNet}
-                />
-                <div className="stats" style={{ marginTop: '10px' }}>
-                    <p><strong>Ziel-Geschwindigkeit (Ground Truth):</strong> {groundTruth.velocity} m/s</p>
-                    <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
-                </div>
+                  <div className="tabs">
+                    <button
+                      className={`tab-button ${activeTab === 'simulation' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('simulation')}
+                    >
+                      Simulation
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 'data' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('data')}
+                    >
+                      Trainingsdaten
+                    </button>
+                  </div>
+
+                  {activeTab === 'simulation' && (
+                    <>
+                      <SimulationCanvas
+                          time={time}
+                          groundTruth={groundTruth}
+                          neuralNet={neuralNet}
+                      />
+                      <div className="stats" style={{ marginTop: '10px' }}>
+                          <p><strong>Ziel-Geschwindigkeit (Ground Truth):</strong> {groundTruth.velocity} m/s</p>
+                          <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
+                      </div>
+                    </>
+                  )}
+
+                  {activeTab === 'data' && (
+                    <div className="data-content">
+                      {trainingData.length > 0 ? (
+                        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr style={{ background: '#eee' }}>
+                                <th style={{ padding: '5px' }}>Input (Zeit)</th>
+                                <th style={{ padding: '5px' }}>Target (Position)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {trainingData.map((d, i) => (
+                                <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                  <td style={{ padding: '5px' }}>{d.input.toFixed(2)}</td>
+                                  <td style={{ padding: '5px' }}>{d.target.toFixed(2)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                          Noch keine Trainingsdaten generiert.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
             </div>
 
@@ -143,36 +190,10 @@ export function App() {
           onTrain={handleTrain}
           onRun={handleRun}
           onReset={handleReset}
-          onToggleData={() => setShowTrainingData(!showTrainingData)}
-          showData={showTrainingData}
           isTraining={isTraining}
           trainingStep={trainingStepIndex}
           dataCount={trainingData.length}
         />
-
-        {showTrainingData && trainingData.length > 0 && (
-          <div className="data-section" style={{ marginTop: '20px', padding: '10px', background: '#f9f9f9', border: '1px solid #ddd' }}>
-            <h3>Trainingsdaten</h3>
-            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-              <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#eee' }}>
-                    <th style={{ padding: '5px' }}>Input (Zeit)</th>
-                    <th style={{ padding: '5px' }}>Target (Position)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trainingData.map((d, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '5px' }}>{d.input.toFixed(2)}</td>
-                      <td style={{ padding: '5px' }}>{d.target.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {trainingHistory.length > 0 && (
           <div className="training-section">
