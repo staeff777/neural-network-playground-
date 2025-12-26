@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'preact/hooks';
 
-export function TrainingVisualizer({ history, currentStepIndex }) {
+export function TrainingVisualizer({ history, currentStepIndex, isTraining }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -9,6 +9,9 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
+
+    // Split into two charts: Left (Weight vs Error), Right (Bias vs Error)
+    const chartWidth = width / 2;
     const padding = 40;
 
     // Clear
@@ -16,98 +19,123 @@ export function TrainingVisualizer({ history, currentStepIndex }) {
 
     // Find Scales
     const maxError = Math.max(...history.map(h => h.error));
-    // Min error usually 0
-    const minWeight = history[0].weight;
-    const maxWeight = history[history.length - 1].weight;
+    // Weight Range
+    const wMin = Math.min(...history.map(h => h.weight));
+    const wMax = Math.max(...history.map(h => h.weight));
+    // Bias Range
+    const bMin = Math.min(...history.map(h => h.bias));
+    const bMax = Math.max(...history.map(h => h.bias));
 
-    const mapX = (w) => padding + (w - minWeight) / (maxWeight - minWeight) * (width - 2 * padding);
+    // Mapping Functions
     const mapY = (e) => height - padding - (e / maxError) * (height - 2 * padding);
 
-    // Draw Axes
-    ctx.beginPath();
-    ctx.strokeStyle = '#333';
-    ctx.setLineDash([]);
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.stroke();
+    const drawChart = (offsetX, xLabel, xMin, xMax, valueKey) => {
+      const mapX = (val) => offsetX + padding + (val - xMin) / (xMax - xMin) * (chartWidth - 2 * padding);
 
-    // Labels
-    ctx.fillStyle = '#333';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Weight (Geschwindigkeit)', width / 2, height - 10);
-    ctx.save();
-    ctx.translate(15, height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Error (MSE)', 0, 0);
-    ctx.restore();
-
-    // Draw Curve (Progressive)
-    ctx.beginPath();
-    ctx.strokeStyle = '#3498db';
-    ctx.lineWidth = 2;
-
-    const limit = (currentStepIndex !== null && currentStepIndex >= 0)
-      ? Math.min(currentStepIndex, history.length - 1)
-      : history.length - 1;
-
-    for (let i = 0; i <= limit; i++) {
-      const point = history[i];
-      const x = mapX(point.weight);
-      const y = mapY(point.error);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Draw Current Scan Point (if scanning)
-    if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex < history.length) {
-      const point = history[currentStepIndex];
-      const cx = mapX(point.weight);
-      const cy = mapY(point.error);
-
-      // Draw Guide Line to Y Axis
+      // Axes
       ctx.beginPath();
-      ctx.strokeStyle = '#e74c3c';
-      ctx.setLineDash([5, 5]);
-      ctx.moveTo(padding, cy);
-      ctx.lineTo(cx, cy);
+      ctx.strokeStyle = '#333';
+      ctx.moveTo(offsetX + padding, padding);
+      ctx.lineTo(offsetX + padding, height - padding);
+      ctx.lineTo(offsetX + chartWidth - padding, height - padding);
       ctx.stroke();
-      ctx.setLineDash([]);
 
-      // Draw Error Value on Y Axis
-      ctx.fillStyle = '#e74c3c';
-      ctx.textAlign = 'right';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(point.error.toFixed(1), padding - 5, cy + 4);
-
-      // Draw Point
-      ctx.beginPath();
-      ctx.fillStyle = '#e74c3c';
-      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Tooltip (Simplified)
-      ctx.fillStyle = '#000';
-      ctx.textAlign = 'center'; // Restore alignment for tooltip
+      // Axis Labels
+      ctx.fillStyle = '#333';
       ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(xLabel, offsetX + chartWidth / 2, height - 10);
 
-      // Just show Weight and Mean Delta, MSE is on axis
-      ctx.fillText(`w: ${point.weight}`, cx, cy - 25);
-      if (point.mae !== undefined) {
-        ctx.fillText(`mean delta: ${point.mae.toFixed(1)}`, cx, cy - 10);
+      // Y-Axis Label (only for left chart to avoid clutter, or duplicate if needed. User asked for ticks/values)
+      // We will duplicate ticks/values. Label maybe just for left.
+      if (offsetX === 0) {
+        ctx.save();
+        ctx.translate(15, height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Error (MSE)', 0, 0);
+        ctx.restore();
       }
-    }
 
-  }, [history, currentStepIndex]);
+      // Ticks
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      // X Ticks (5 steps)
+      for(let i=0; i<=5; i++) {
+        const val = xMin + (xMax - xMin) * (i/5);
+        const x = mapX(val);
+        ctx.fillText(val.toFixed(0), x, height - padding + 12);
+        // Tick mark
+        ctx.beginPath();
+        ctx.moveTo(x, height - padding);
+        ctx.lineTo(x, height - padding + 4);
+        ctx.stroke();
+      }
+
+      // Y Ticks (5 steps) - Draw for BOTH charts now
+      ctx.textAlign = 'right';
+      for(let i=0; i<=5; i++) {
+        const val = maxError * (i/5);
+        const y = mapY(val);
+        // Position relative to the current chart's y-axis (which is at offsetX + padding)
+        const xTick = offsetX + padding;
+        ctx.fillText(val.toFixed(0), xTick - 5, y + 3);
+            // Tick mark
+        ctx.beginPath();
+        ctx.moveTo(xTick, y);
+        ctx.lineTo(xTick - 4, y);
+        ctx.stroke();
+      }
+
+      // Plot Points (Scatter projection)
+      // If training finished, show ALL points. Else show up to current.
+      const showAll = !isTraining && history.length > 0;
+      const limit = showAll
+        ? history.length - 1
+        : (currentStepIndex !== null && currentStepIndex >= 0)
+            ? Math.min(currentStepIndex, history.length - 1)
+            : -1;
+
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
+      for (let i = 0; i <= limit; i++) {
+        const point = history[i];
+        const x = mapX(point[valueKey]);
+        const y = mapY(point.error);
+        ctx.fillRect(x, y, 2, 2);
+      }
+
+      // Highlight Current (or Best if finished)
+      if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex < history.length) {
+        const point = history[currentStepIndex];
+        const cx = mapX(point[valueKey]);
+        const cy = mapY(point.error);
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#e74c3c';
+        ctx.fillStyle = '#e74c3c';
+        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tooltip
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(`${point[valueKey]}`, cx, cy - 8);
+      }
+    };
+
+    // Draw Chart 1: Weight vs Error
+    drawChart(0, 'Weight (w)', wMin, wMax, 'weight');
+
+    // Draw Chart 2: Bias vs Error
+    drawChart(chartWidth, 'Bias (b)', bMin, bMax, 'bias');
+
+  }, [history, currentStepIndex, isTraining]);
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
-      <h3>Training Visualisierung (Exhaustive Search)</h3>
+      <h3>Training Visualisierung (Projektionen)</h3>
       <canvas
         ref={canvasRef}
-        width={600}
+        width={800}
         height={300}
         style={{ width: '100%' }}
       />
