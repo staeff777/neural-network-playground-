@@ -1,10 +1,6 @@
 import { useRef, useEffect } from 'preact/hooks';
 
-export function SpamCanvas({ time, groundTruth, neuralNet }) { // 'time' here represents 'simulation step' or index if iterating
-  // For Spam simulation, "Running" might mean "Visualizing incoming emails one by one".
-  // Or it could just show the static curve and points.
-  // The user asked for "Inbox" view vs "Sigmoid Graph". We agreed on Sigmoid Graph.
-
+export function SpamCanvas({ time, groundTruth, neuralNet }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -67,20 +63,13 @@ export function SpamCanvas({ time, groundTruth, neuralNet }) { // 'time' here re
     ctx.fillText('Spam Wahrscheinlichkeit', 0, 0);
     ctx.restore();
 
-    // 1. Draw Ground Truth Curve (Green Dashed?) - Optional, maybe just show Neural Net curve
-    // User wants to compare "Ground Truth" vs "Model".
-    // Physics sim shows Ground Truth Ball (Ghost) vs Model Ball.
-    // Here we can show Ground Truth Curve vs Model Curve.
-
+    // 1. Draw Ground Truth Curve (Gray Dashed)
     const drawCurve = (model, color, dash = []) => {
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.setLineDash(dash);
       ctx.lineWidth = 2;
       for (let x = xMin; x <= xMax; x += 0.5) {
-        // We need to access sigmoid logic.
-        // If 'model' is GroundTruth, it has .getProbability or .sigmoid
-        // If 'model' is NeuralNet, it has .predict
         let y = 0;
         if (typeof model.getProbability === 'function') {
             y = model.getProbability(x);
@@ -100,60 +89,86 @@ export function SpamCanvas({ time, groundTruth, neuralNet }) { // 'time' here re
     drawCurve(groundTruth, '#ccc', [5, 5]); // Ground Truth (Gray/Ghost)
     drawCurve(neuralNet, '#e74c3c'); // Model (Red)
 
-    // 2. Draw Simulation "State"
-    // In Physics: Ball moves.
-    // In Spam: Maybe we flash random points?
-    // "handleRun" sets time 0..infinity.
-    // We can simulate emails arriving.
+    // 2. Draw Simulation "State" (Points appearing over time)
+    // Time represents approximate seconds. Let's say 2 points per second.
+    // Total batch size: 50.
+    const speed = 2; // points per unit of time
+    const count = Math.floor(time * speed);
+    const totalPoints = 50;
 
-    // We can use 'time' to animate a point appearing.
-    // Let's generate a pseudo-random point based on time to show "checking".
-    // Or just nothing if we only want static analysis.
-    // The user asked for "Simulation".
+    // Pseudo-random generator for consistent data points
+    const pseudoRand = (seed) => {
+        const x = Math.sin(seed * 123.456) * 10000;
+        return x - Math.floor(x);
+    };
 
-    // Let's show a "Current Email" being evaluated.
-    // We use Math.sin(time) or just noise to pick a random X.
-    if (time > 0) {
-        // Use time to seed/move a cursor?
-        // Let's just pick a random email based on the integer part of time (simulation step)
-        // If time is float, we can stabilize it.
-        const currentMsgId = Math.floor(time);
-        // Simple pseudo-random based on ID
-        const pseudoRand = (seed) => {
-            const x = Math.sin(seed) * 10000;
-            return x - Math.floor(x);
-        };
+    const pointsToShow = Math.min(count, totalPoints);
 
-        const wordCount = Math.floor(pseudoRand(currentMsgId) * 20); // 0-20 words
-        const isSpam = groundTruth.classify(wordCount); // 0 or 1
+    for (let i = 0; i < pointsToShow; i++) {
+        // Generate consistent data for index i
+        // 1. Word Count (0-20)
+        // Use i as seed
+        const r1 = pseudoRand(i + 1);
+        const wordCount = Math.floor(r1 * 21); // 0 to 20
 
-        const modelProb = neuralNet.predict(wordCount);
-        const prediction = modelProb > 0.5 ? 1 : 0;
+        // 2. Is Spam? (Based on Ground Truth + Noise?)
+        // To be consistent with the "Training Data" generation, we should use the ground truth logic
+        // But here we want visual points.
+        // Let's rely on groundTruth.classify which might be probabilistic.
+        // We need it to be deterministic for the SAME index i, so we must mock the randomness inside classify if possible,
+        // or just implement the classification here using a seeded random.
 
-        // Draw the point
+        const prob = groundTruth.getProbability(wordCount);
+        // Use a second random seed for the label decision to keep it stable
+        const r2 = pseudoRand(i + 999);
+        const isSpam = r2 < prob ? 1 : 0;
+
         const cx = mapX(wordCount);
-        const cy = mapY(isSpam); // It's either 0 or 1
+        const cy = mapY(isSpam);
 
+        // Draw Point
         ctx.beginPath();
-        ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-        ctx.fillStyle = isSpam ? '#e74c3c' : '#2ecc71'; // Red for Spam, Green for Ham
+        // Visual Jitter to avoid perfect overlap?
+        // Add slight random offset to x and y for visualization only
+        const jitterX = (pseudoRand(i + 333) - 0.5) * 10;
+        const jitterY = (pseudoRand(i + 444) - 0.5) * 10;
+
+        ctx.arc(cx + jitterX, cy + jitterY, 5, 0, Math.PI * 2);
+
+        // Color based on Label (Green = Safe/Ham, Red = Spam)
+        // But usually Spam=1, Ham=0.
+        // User convention: Spam (1) is Red? Ham (0) is Green?
+        ctx.fillStyle = isSpam ? '#e74c3c' : '#2ecc71';
         ctx.fill();
+        ctx.strokeStyle = '#fff';
         ctx.stroke();
+    }
 
-        // Draw line to curve
-        const curveY = mapY(modelProb);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx, curveY);
-        ctx.strokeStyle = '#aaa';
-        ctx.setLineDash([2, 2]);
-        ctx.stroke();
-        ctx.setLineDash([]);
+    // Highlight the *latest* point with extra info
+    if (pointsToShow > 0 && pointsToShow <= totalPoints) {
+         const i = pointsToShow - 1;
+         // Recalculate for the last point to draw label
+         const r1 = pseudoRand(i + 1);
+         const wordCount = Math.floor(r1 * 21);
+         const prob = groundTruth.getProbability(wordCount);
+         const r2 = pseudoRand(i + 999);
+         const isSpam = r2 < prob ? 1 : 0;
+         const jitterX = (pseudoRand(i + 333) - 0.5) * 10;
+         const jitterY = (pseudoRand(i + 444) - 0.5) * 10;
 
-        // Label
-        ctx.fillStyle = '#333';
-        ctx.fillText(`${wordCount} Wörter`, cx, cy + (isSpam ? -15 : 15));
-        ctx.fillText(prediction === isSpam ? "Korrekt" : "Falsch", cx, cy + (isSpam ? -28 : 28));
+         const cx = mapX(wordCount) + jitterX;
+         const cy = mapY(isSpam) + jitterY;
+
+         // Highlight circle
+         ctx.beginPath();
+         ctx.arc(cx, cy, 8, 0, Math.PI*2);
+         ctx.strokeStyle = '#333';
+         ctx.stroke();
+
+         // Label
+         ctx.fillStyle = '#333';
+         ctx.font = '10px sans-serif';
+         ctx.fillText(`${wordCount}`, cx, cy - 12);
     }
 
   }, [time, groundTruth, neuralNet]);
