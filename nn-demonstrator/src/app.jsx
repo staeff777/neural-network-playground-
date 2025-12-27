@@ -24,6 +24,9 @@ export function App() {
   const [activeTab, setActiveTab] = useState('simulation');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
 
+  // Ref for tracking time delta
+  const lastTimeRef = useRef(0);
+
   // Initialize Simulation
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -44,23 +47,49 @@ export function App() {
     setSimConfig(config);
   }, []);
 
-  // Animation Loop
+  // Animation Loop for Simulation
   useEffect(() => {
     let animationFrameId;
 
     const loop = (timestamp) => {
-      if (isRunning) {
-        setTime(t => t + 0.05);
-        animationFrameId = requestAnimationFrame(loop);
+      if (!isRunning) return;
+
+      if (lastTimeRef.current === 0) {
+        lastTimeRef.current = timestamp;
       }
+
+      const dt = (timestamp - lastTimeRef.current) / 1000; // Delta time in seconds
+      lastTimeRef.current = timestamp;
+
+      // Cap dt to prevent huge jumps if tab was backgrounded
+      const safeDt = Math.min(dt, 0.1);
+
+      setTime(prevTime => {
+        // Physics logic was originally tuned to 0.05 per frame @ 60fps = 3.0 units/sec.
+        // To preserve that speed: time += safeDt * 3.
+        const speedMultiplier = 3.0;
+        const newTime = prevTime + (safeDt * speedMultiplier);
+
+        // Check for auto-stop
+        if (simConfig && simConfig.isFinished && simConfig.isFinished(newTime)) {
+             setIsRunning(false);
+             setStatusMsg('Simulation beendet.');
+             return newTime;
+        }
+
+        return newTime;
+      });
+
+      animationFrameId = requestAnimationFrame(loop);
     };
 
     if (isRunning) {
+      lastTimeRef.current = 0; // Reset timer start
       animationFrameId = requestAnimationFrame(loop);
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isRunning]);
+  }, [isRunning, simConfig]);
 
   // Training Loop
   useEffect(() => {
@@ -144,8 +173,6 @@ export function App() {
   const CanvasComponent = simConfig.CanvasComponent;
   const vizProps = simConfig.networkViz || {};
 
-  // Calculate current input for visualization
-  // If stopped, just show 0 or default. If running, use current time-based input.
   const currentInput = simConfig.getInput ? simConfig.getInput(time) : time;
 
   return (

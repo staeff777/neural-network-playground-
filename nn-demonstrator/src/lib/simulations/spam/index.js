@@ -50,5 +50,9 @@ export const config = {
     inputLabel: "Wörter (x)",
     outputLabel: "Spam? (p)",
     biasLabel: "b"
-  }
+  },
+
+  // Simulation Control
+  // 50 points total, speed is 2 points/sec
+  isFinished: (time) => time >= 25
 };
