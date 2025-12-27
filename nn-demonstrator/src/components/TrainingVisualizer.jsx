@@ -132,7 +132,6 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining }) {
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
-      <h3>Training Visualisierung (Projektionen)</h3>
       <canvas
         ref={canvasRef}
         width={800}
