@@ -1,4 +1,13 @@
-export function NetworkVisualizer({ input, weight, bias, output }) {
+export function NetworkVisualizer({
+  input,
+  weight,
+  bias,
+  output,
+  formula = "y = w * x + b",
+  inputLabel = "Input",
+  outputLabel = "Output",
+  biasLabel = "b"
+}) {
   // Simple layout
   // Input (50, 50) -> Output (250, 50)
 
@@ -7,10 +16,17 @@ export function NetworkVisualizer({ input, weight, bias, output }) {
   const outputX = 300;
   const y = 80;
 
+  // Ensure values are numbers before toFixed
+  const wVal = Number(weight) || 0;
+  const bVal = Number(bias) || 0;
+  const inVal = Number(input) || 0;
+  const outVal = Number(output) || 0;
+
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff', textAlign: 'center' }}>
       <h3>Modell Architektur</h3>
       <svg width="350" height="200" style={{ overflow: 'visible' }}>
+        <title>Network Visualization</title>
         {/* Definition for arrow marker */}
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
@@ -47,31 +63,31 @@ export function NetworkVisualizer({ input, weight, bias, output }) {
           fontSize="12"
           fontWeight="bold"
         >
-          w: {weight.toFixed(2)}
+          w: {wVal.toFixed(2)}
         </text>
 
         {/* Input Node */}
-        <circle cx={inputX} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" />
+        <circle cx={inputX} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" aria-label="Input Node" />
         <text x={inputX} y={y} textAnchor="middle" dominantBaseline="middle" fontWeight="bold">Input</text>
-        <text x={inputX} y={y + 45} textAnchor="middle" fontSize="12" fill="#555">Zeit (t)</text>
-        <text x={inputX} y={y + 60} textAnchor="middle" fontSize="14" fill="#333" fontWeight="bold">{input.toFixed(2)}</text>
+        <text x={inputX} y={y + 45} textAnchor="middle" fontSize="12" fill="#555">{inputLabel}</text>
+        <text x={inputX} y={y + 60} textAnchor="middle" fontSize="14" fill="#333" fontWeight="bold">{inVal.toFixed(2)}</text>
 
         {/* Bias Label */}
          <text x={outputX + 15} y={y + 80} textAnchor="start" dominantBaseline="middle" fill="#2980b9" fontSize="12" fontWeight="bold">
-          b: {bias ? bias.toFixed(2) : "0.00"}
+          {biasLabel}: {bVal.toFixed(2)}
         </text>
         <circle cx={outputX} cy={y + 80} r={5} fill="#2980b9" />
 
 
         {/* Output Node */}
-        <circle cx={outputX} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" />
+        <circle cx={outputX} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" aria-label="Output Node" />
         <text x={outputX} y={y} textAnchor="middle" dominantBaseline="middle" fontWeight="bold">Output</text>
-        <text x={outputX} y={y - 45} textAnchor="middle" fontSize="12" fill="#555">Pos (m)</text>
-        <text x={outputX} y={y - 60} textAnchor="middle" fontSize="14" fill="#333" fontWeight="bold">{output.toFixed(2)}</text>
+        <text x={outputX} y={y - 45} textAnchor="middle" fontSize="12" fill="#555">{outputLabel}</text>
+        <text x={outputX} y={y - 60} textAnchor="middle" fontSize="14" fill="#333" fontWeight="bold">{outVal.toFixed(2)}</text>
 
         {/* Equation */}
         <text x={175} y={180} textAnchor="middle" fontSize="14" fontStyle="italic" fill="#777">
-          pos = w * t + b
+          {formula}
         </text>
       </svg>
     </div>

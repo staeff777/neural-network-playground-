@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'preact/hooks';
 
-export function SimulationCanvas({ time, groundTruth, neuralNet, maxDistance = 300 }) {
+export function PhysicsCanvas({ time, groundTruth, neuralNet, maxDistance = 300 }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
