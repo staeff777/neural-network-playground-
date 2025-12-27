@@ -81,6 +81,7 @@ export function App() {
     const data = trainer.generateData(groundTruth, times);
     setTrainingData(data);
     setStatusMsg(`${data.length} Trainingsdaten generiert.`);
+    setActiveTab('data');
   };
 
   const handleTrain = () => {
@@ -89,6 +90,7 @@ export function App() {
     setIsTraining(true);
     setTrainingStepIndex(0);
     setStatusMsg('Suche optimales Gewicht und Bias...');
+    setActiveTab('training');
 
     // Run training with both ranges
     // Weight: 0 to 60, step 1
@@ -105,6 +107,7 @@ export function App() {
     setTime(0);
     setIsRunning(true);
     setStatusMsg('Simulation läuft...');
+    setActiveTab('simulation');
   };
 
   const handleReset = () => {
@@ -141,6 +144,12 @@ export function App() {
                       onClick={() => setActiveTab('data')}
                     >
                       Trainingsdaten
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 'training' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('training')}
+                    >
+                      Training
                     </button>
                   </div>
 
@@ -186,6 +195,22 @@ export function App() {
                       )}
                     </div>
                   )}
+
+                  {activeTab === 'training' && (
+                    <div className="training-content">
+                      {trainingHistory.length > 0 ? (
+                        <TrainingVisualizer
+                          history={trainingHistory}
+                          currentStepIndex={trainingStepIndex}
+                          isTraining={isTraining}
+                        />
+                      ) : (
+                         <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                          Noch kein Training gestartet.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
             </div>
 
@@ -208,16 +233,6 @@ export function App() {
           trainingStep={trainingStepIndex}
           dataCount={trainingData.length}
         />
-
-        {trainingHistory.length > 0 && (
-          <div className="training-section">
-            <TrainingVisualizer
-              history={trainingHistory}
-              currentStepIndex={trainingStepIndex}
-              isTraining={isTraining}
-            />
-          </div>
-        )}
       </main>
     </div>
   );
