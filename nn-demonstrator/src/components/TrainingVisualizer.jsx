@@ -10,19 +10,19 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
     const width = canvas.width;
     const height = canvas.height;
 
-    // We have N parameters. (e.g., 4 weights + 1 bias = 5)
-    // We want to draw N small plots side-by-side (or wrapped).
-    // History point: { weights: [w1, w2...], bias: b, error: e }
-
-    // Determine dimensions
+    // Debugging: Check history structure
     const sample = history[0];
-    const numWeights = sample.weights ? sample.weights.length : 1; // 1 for old physics
-    const numParams = numWeights + 1; // + bias
+    console.log('TrainingVisualizer Sample:', sample);
 
-    // Grid Layout:
-    // If 2 params: 2 cols.
-    // If 5 params: 3 cols, 2 rows? Or just 5 cols if small?
-    // Let's do a flex-like layout manually.
+    // Determine number of parameters
+    // If 'weights' is an array, use its length. Otherwise (legacy/single), use 1.
+    const numWeights = Array.isArray(sample.weights) ? sample.weights.length : 1;
+    const numParams = numWeights + 1; // + Bias
+
+    console.log('Num Params:', numParams, 'Cols/Rows Calc...');
+
+    // Grid Layout
+    // Max 3 cols
     const cols = numParams > 3 ? 3 : numParams;
     const rows = Math.ceil(numParams / cols);
 
@@ -44,7 +44,12 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
         // Extract values for this parameter across history
         const getValue = (h) => {
-            if (pIndex < numWeights) return Array.isArray(h.weights) ? h.weights[pIndex] : h.weight; // Handle generic array vs legacy prop
+            // pIndex < numWeights -> it's a weight
+            if (pIndex < numWeights) {
+                if (Array.isArray(h.weights)) return h.weights[pIndex];
+                return h.weight; // Legacy
+            }
+            // else it's bias
             return h.bias;
         };
 
@@ -53,6 +58,10 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         const maxVal = Math.max(...values);
 
         const mapX = (val) => offsetX + padding + (val - minVal) / (maxVal - minVal || 1) * (chartWidth - 2 * padding);
+
+        // Debug: Draw bounds
+        // ctx.strokeStyle = 'red';
+        // ctx.strokeRect(offsetX, offsetY, chartWidth, chartHeight);
 
         // Axes
         ctx.beginPath();
@@ -67,8 +76,6 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         ctx.fillText(label, offsetX + chartWidth / 2, offsetY + 15);
 
         // Plot Points
-        // To avoid drawing 100k points, we rely on the history being pre-sampled by the worker/trainer if large.
-        // Current index handling:
         const showAll = !isTraining && history.length > 0;
         const limit = showAll
             ? history.length - 1
@@ -118,7 +125,7 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       <canvas
         ref={canvasRef}
         width={800}
-        height={400} // Increased height for multiple rows
+        height={400}
         style={{ width: '100%' }}
       />
     </div>
