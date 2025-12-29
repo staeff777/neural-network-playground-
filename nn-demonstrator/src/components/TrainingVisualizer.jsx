@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'preact/hooks';
 
-export function TrainingVisualizer({ history, currentStepIndex, isTraining }) {
+export function TrainingVisualizer({ history, currentStepIndex, isTraining, parameterLabels = [] }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -10,132 +10,115 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining }) {
     const width = canvas.width;
     const height = canvas.height;
 
-    // Split into two charts: Left (Weight vs Error), Right (Bias vs Error)
-    const chartWidth = width / 2;
-    const padding = 40;
+    // We have N parameters. (e.g., 4 weights + 1 bias = 5)
+    // We want to draw N small plots side-by-side (or wrapped).
+    // History point: { weights: [w1, w2...], bias: b, error: e }
+
+    // Determine dimensions
+    const sample = history[0];
+    const numWeights = sample.weights ? sample.weights.length : 1; // 1 for old physics
+    const numParams = numWeights + 1; // + bias
+
+    // Grid Layout:
+    // If 2 params: 2 cols.
+    // If 5 params: 3 cols, 2 rows? Or just 5 cols if small?
+    // Let's do a flex-like layout manually.
+    const cols = numParams > 3 ? 3 : numParams;
+    const rows = Math.ceil(numParams / cols);
+
+    const chartWidth = width / cols;
+    const chartHeight = height / rows;
+    const padding = 30;
 
     // Clear
     ctx.clearRect(0, 0, width, height);
 
-    // Find Scales
+    // Global Error Max (for unified Y scale)
     const maxError = Math.max(...history.map(h => h.error));
-    // Weight Range
-    const wMin = Math.min(...history.map(h => h.weight));
-    const wMax = Math.max(...history.map(h => h.weight));
-    // Bias Range
-    const bMin = Math.min(...history.map(h => h.bias));
-    const bMax = Math.max(...history.map(h => h.bias));
+    const mapY = (e, offsetY) => offsetY + chartHeight - padding - (e / maxError) * (chartHeight - 2 * padding);
 
-    // Mapping Functions
-    const mapY = (e) => height - padding - (e / maxError) * (height - 2 * padding);
+    // Draw Function
+    const drawSubChart = (pIndex, label, col, row) => {
+        const offsetX = col * chartWidth;
+        const offsetY = row * chartHeight;
 
-    const drawChart = (offsetX, xLabel, xMin, xMax, valueKey) => {
-      const mapX = (val) => offsetX + padding + (val - xMin) / (xMax - xMin) * (chartWidth - 2 * padding);
+        // Extract values for this parameter across history
+        const getValue = (h) => {
+            if (pIndex < numWeights) return Array.isArray(h.weights) ? h.weights[pIndex] : h.weight; // Handle generic array vs legacy prop
+            return h.bias;
+        };
 
-      // Axes
-      ctx.beginPath();
-      ctx.strokeStyle = '#333';
-      ctx.moveTo(offsetX + padding, padding);
-      ctx.lineTo(offsetX + padding, height - padding);
-      ctx.lineTo(offsetX + chartWidth - padding, height - padding);
-      ctx.stroke();
+        const values = history.map(getValue);
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
 
-      // Axis Labels
-      ctx.fillStyle = '#333';
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(xLabel, offsetX + chartWidth / 2, height - 10);
+        const mapX = (val) => offsetX + padding + (val - minVal) / (maxVal - minVal || 1) * (chartWidth - 2 * padding);
 
-      // Y-Axis Label (only for left chart to avoid clutter, or duplicate if needed. User asked for ticks/values)
-      // We will duplicate ticks/values. Label maybe just for left.
-      if (offsetX === 0) {
-        ctx.save();
-        ctx.translate(15, height / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText('Error (MSE)', 0, 0);
-        ctx.restore();
-      }
-
-      // Ticks
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      // X Ticks (5 steps)
-      for(let i=0; i<=5; i++) {
-        const val = xMin + (xMax - xMin) * (i/5);
-        const x = mapX(val);
-        ctx.fillText(val.toFixed(0), x, height - padding + 12);
-        // Tick mark
+        // Axes
         ctx.beginPath();
-        ctx.moveTo(x, height - padding);
-        ctx.lineTo(x, height - padding + 4);
+        ctx.strokeStyle = '#ddd';
+        ctx.rect(offsetX + padding, offsetY + padding, chartWidth - 2*padding, chartHeight - 2*padding);
         ctx.stroke();
-      }
 
-      // Y Ticks (5 steps) - Draw for BOTH charts now
-      ctx.textAlign = 'right';
-      for(let i=0; i<=5; i++) {
-        const val = maxError * (i/5);
-        const y = mapY(val);
-        // Position relative to the current chart's y-axis (which is at offsetX + padding)
-        const xTick = offsetX + padding;
-        ctx.fillText(val.toFixed(0), xTick - 5, y + 3);
-            // Tick mark
-        ctx.beginPath();
-        ctx.moveTo(xTick, y);
-        ctx.lineTo(xTick - 4, y);
-        ctx.stroke();
-      }
-
-      // Plot Points (Scatter projection)
-      // If training finished, show ALL points. Else show up to current.
-      const showAll = !isTraining && history.length > 0;
-      const limit = showAll
-        ? history.length - 1
-        : (currentStepIndex !== null && currentStepIndex >= 0)
-            ? Math.min(currentStepIndex, history.length - 1)
-            : -1;
-
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
-      for (let i = 0; i <= limit; i++) {
-        const point = history[i];
-        const x = mapX(point[valueKey]);
-        const y = mapY(point.error);
-        ctx.fillRect(x, y, 2, 2);
-      }
-
-      // Highlight Current (or Best if finished)
-      if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex < history.length) {
-        const point = history[currentStepIndex];
-        const cx = mapX(point[valueKey]);
-        const cy = mapY(point.error);
-
-        ctx.beginPath();
-        ctx.strokeStyle = '#e74c3c';
-        ctx.fillStyle = '#e74c3c';
-        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Tooltip
+        // Label
+        ctx.fillStyle = '#333';
+        ctx.font = '12px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#e74c3c';
-        ctx.fillText(`${point[valueKey]}`, cx, cy - 8);
-      }
+        ctx.fillText(label, offsetX + chartWidth / 2, offsetY + 15);
+
+        // Plot Points
+        // To avoid drawing 100k points, we rely on the history being pre-sampled by the worker/trainer if large.
+        // Current index handling:
+        const showAll = !isTraining && history.length > 0;
+        const limit = showAll
+            ? history.length - 1
+            : (currentStepIndex !== null && currentStepIndex >= 0)
+                ? Math.min(currentStepIndex, history.length - 1)
+                : -1;
+
+        ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
+        for (let i = 0; i <= limit; i++) {
+            const h = history[i];
+            const cx = mapX(getValue(h));
+            const cy = mapY(h.error, offsetY);
+            ctx.fillRect(cx, cy, 2, 2);
+        }
+
+        // Current/Best Point
+        if (limit >= 0) {
+            const h = history[limit];
+            const cx = mapX(getValue(h));
+            const cy = mapY(h.error, offsetY);
+            ctx.beginPath();
+            ctx.fillStyle = '#e74c3c';
+            ctx.arc(cx, cy, 4, 0, Math.PI*2);
+            ctx.fill();
+        }
     };
 
-    // Draw Chart 1: Weight vs Error
-    drawChart(0, 'Weight (w)', wMin, wMax, 'weight');
+    // Render loop
+    let p = 0;
+    // Weights
+    for(let i=0; i<numWeights; i++) {
+        const c = p % cols;
+        const r = Math.floor(p / cols);
+        const lbl = parameterLabels[i] || `w${i+1}`;
+        drawSubChart(i, lbl, c, r);
+        p++;
+    }
+    // Bias
+    const c = p % cols;
+    const r = Math.floor(p / cols);
+    drawSubChart(numWeights, "Bias", c, r);
 
-    // Draw Chart 2: Bias vs Error
-    drawChart(chartWidth, 'Bias (b)', bMin, bMax, 'bias');
-
-  }, [history, currentStepIndex, isTraining]);
+  }, [history, currentStepIndex, isTraining, parameterLabels]);
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
       <canvas
         ref={canvasRef}
         width={800}
-        height={300}
+        height={400} // Increased height for multiple rows
         style={{ width: '100%' }}
       />
     </div>

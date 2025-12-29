@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
-import { GroundTruth } from './lib/physics';
-import { SimpleNeuralNet, ExhaustiveTrainer } from './lib/model';
-import { SimulationCanvas } from './components/SimulationCanvas';
+import { ExhaustiveTrainer } from './lib/trainer';
 import { TrainingVisualizer } from './components/TrainingVisualizer';
 import { NetworkVisualizer } from './components/NetworkVisualizer';
 import { ControlPanel } from './components/ControlPanel';
+import { getSimulationConfig } from './lib/simulations/registry';
 import './app.css';
 
 export function App() {
+  const [simConfig, setSimConfig] = useState(null);
+
   // Logic Objects
-  const groundTruth = useRef(new GroundTruth(30, 50)).current; // Velocity 30, Start Pos 50
-  const neuralNet = useRef(new SimpleNeuralNet()).current;
-  const trainer = useRef(new ExhaustiveTrainer(neuralNet)).current;
+  const groundTruth = useRef(null);
+  const neuralNet = useRef(null);
+  const trainer = useRef(null);
 
   // App State
   const [time, setTime] = useState(0);
@@ -23,33 +24,81 @@ export function App() {
   const [activeTab, setActiveTab] = useState('simulation');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
 
+  // Ref for tracking time delta
+  const lastTimeRef = useRef(0);
+
+  // Initialize Simulation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const simId = params.get('sim') || 'physics';
+    const config = getSimulationConfig(simId);
+
+    // Initialize Logic
+    groundTruth.current = new config.GroundTruth(...(config.groundTruthDefaults || []));
+    neuralNet.current = new config.Model();
+    // Defaults
+    if(config.defaultParams) {
+        if (config.defaultParams.weight !== undefined) neuralNet.current.setWeight(config.defaultParams.weight);
+        if (config.defaultParams.bias !== undefined) neuralNet.current.setBias(config.defaultParams.bias);
+    }
+
+    trainer.current = new ExhaustiveTrainer(neuralNet.current);
+
+    setSimConfig(config);
+  }, []);
+
   // Animation Loop for Simulation
   useEffect(() => {
     let animationFrameId;
 
     const loop = (timestamp) => {
-      if (isRunning) {
-        setTime(t => t + 0.05);
-        animationFrameId = requestAnimationFrame(loop);
+      if (!isRunning) return;
+
+      if (lastTimeRef.current === 0) {
+        lastTimeRef.current = timestamp;
       }
+
+      const dt = (timestamp - lastTimeRef.current) / 1000; // Delta time in seconds
+      lastTimeRef.current = timestamp;
+
+      // Cap dt to prevent huge jumps if tab was backgrounded
+      const safeDt = Math.min(dt, 0.1);
+
+      setTime(prevTime => {
+        // Physics logic was originally tuned to 0.05 per frame @ 60fps = 3.0 units/sec.
+        // To preserve that speed: time += safeDt * 3.
+        const speedMultiplier = 3.0;
+        const newTime = prevTime + (safeDt * speedMultiplier);
+
+        // Check for auto-stop
+        if (simConfig && simConfig.isFinished && simConfig.isFinished(newTime)) {
+             setIsRunning(false);
+             setStatusMsg('Simulation beendet.');
+             return newTime;
+        }
+
+        return newTime;
+      });
+
+      animationFrameId = requestAnimationFrame(loop);
     };
 
     if (isRunning) {
+      lastTimeRef.current = 0; // Reset timer start
       animationFrameId = requestAnimationFrame(loop);
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isRunning]);
+  }, [isRunning, simConfig]);
 
-  // Animation Loop for Training Visualization
+  // Training Loop
   useEffect(() => {
     let intervalId;
     if (isTraining && trainingHistory.length > 0) {
       intervalId = setInterval(() => {
         setTrainingStepIndex(prev => {
-          const next = prev + 10; // Speed up visualization as there are many steps now
+          const next = prev + 10;
           if (next >= trainingHistory.length) {
-            // Training Done
             setIsTraining(false);
             let bestIndex = 0;
             let minErr = Infinity;
@@ -60,45 +109,41 @@ export function App() {
               }
             });
             const best = trainingHistory[bestIndex];
-            neuralNet.setWeight(best.weight);
-            neuralNet.setBias(best.bias);
+            neuralNet.current.setWeight(best.weight);
+            neuralNet.current.setBias(best.bias);
             setStatusMsg(`Training fertig! w: ${best.weight}, b: ${best.bias}`);
             return bestIndex;
           }
-          // Update model visualization
           const currentPoint = trainingHistory[next];
-          neuralNet.setWeight(currentPoint.weight);
-          neuralNet.setBias(currentPoint.bias);
+          neuralNet.current.setWeight(currentPoint.weight);
+          neuralNet.current.setBias(currentPoint.bias);
           return next;
         });
-      }, 5); // Faster updates
+      }, 5);
     }
     return () => clearInterval(intervalId);
-  }, [isTraining, trainingHistory, neuralNet]);
+  }, [isTraining, trainingHistory]);
 
   const handleGenerateData = () => {
-    const times = Array.from({ length: 20 }, (_, i) => i * 0.5);
-    const data = trainer.generateData(groundTruth, times);
+    if (!simConfig) return;
+    const data = simConfig.generateData(groundTruth.current);
     setTrainingData(data);
     setStatusMsg(`${data.length} Trainingsdaten generiert.`);
     setActiveTab('data');
   };
 
   const handleTrain = () => {
-    if (trainingData.length === 0) return;
+    if (trainingData.length === 0 || !simConfig) return;
 
     setIsTraining(true);
     setTrainingStepIndex(0);
     setStatusMsg('Suche optimales Gewicht und Bias...');
     setActiveTab('training');
 
-    // Run training with both ranges
-    // Weight: 0 to 60, step 1
-    // Bias: 0 to 100, step 2 (to keep iterations reasonable for demo ~60*50=3000 steps)
-    const { history } = trainer.train(
+    const { history } = trainer.current.train(
         trainingData,
-        { min: 0, max: 60, step: 1 },
-        { min: 0, max: 100, step: 2 }
+        simConfig.trainingConfig.weightRange,
+        simConfig.trainingConfig.biasRange
     );
     setTrainingHistory(history);
   };
@@ -116,16 +161,29 @@ export function App() {
     setTrainingData([]);
     setTrainingHistory([]);
     setTrainingStepIndex(-1);
-    neuralNet.setWeight(0);
-    neuralNet.setBias(0);
+    if (neuralNet.current && simConfig?.defaultParams) {
+        neuralNet.current.setWeight(simConfig.defaultParams.weight || 0);
+        neuralNet.current.setBias(simConfig.defaultParams.bias || 0);
+    }
     setStatusMsg('Reset durchgeführt.');
   };
+
+  if (!simConfig) return <div>Lade Simulation...</div>;
+
+  const CanvasComponent = simConfig.CanvasComponent;
+  const vizProps = simConfig.networkViz || {};
+
+  const currentInput = simConfig.getInput ? simConfig.getInput(time) : time;
 
   return (
     <div className="container">
       <header>
         <h1>Neural Network Demonstrator</h1>
-        <p>Phase 1: Lineare Regression (Exhaustive Search 2D)</p>
+        <p>{simConfig.title}</p>
+        <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+            <a href="?sim=physics" style={{ marginRight: '10px', fontWeight: simConfig.id==='physics'?'bold':'normal' }}>Phase 1 (Physik)</a>
+            <a href="?sim=spam" style={{ fontWeight: simConfig.id==='spam'?'bold':'normal' }}>Phase 2 (Spam)</a>
+        </div>
       </header>
 
       <main>
@@ -155,13 +213,14 @@ export function App() {
 
                   {activeTab === 'simulation' && (
                     <>
-                      <SimulationCanvas
+                      <CanvasComponent
                           time={time}
-                          groundTruth={groundTruth}
-                          neuralNet={neuralNet}
+                          input={currentInput}
+                          groundTruth={groundTruth.current}
+                          neuralNet={neuralNet.current}
                       />
                       <div className="stats" style={{ marginTop: '10px' }}>
-                          <p><strong>Ziel (Ground Truth):</strong> Vel={groundTruth.velocity}, Pos0={groundTruth.initialPosition}</p>
+                          <p>{simConfig.description}</p>
                           <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
                       </div>
                     </>
@@ -174,8 +233,8 @@ export function App() {
                           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                             <thead>
                               <tr style={{ background: '#eee' }}>
-                                <th style={{ padding: '5px' }}>Input (Zeit)</th>
-                                <th style={{ padding: '5px' }}>Target (Position)</th>
+                                <th style={{ padding: '5px' }}>Input ({vizProps.inputLabel})</th>
+                                <th style={{ padding: '5px' }}>Target ({vizProps.outputLabel})</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -216,10 +275,14 @@ export function App() {
 
             <div className="network-wrapper" style={{ flex: '0 0 350px' }}>
                 <NetworkVisualizer
-                    input={time}
-                    weight={neuralNet.weight}
-                    bias={neuralNet.bias}
-                    output={neuralNet.predict(time)}
+                    input={currentInput}
+                    weight={neuralNet.current ? neuralNet.current.weight : 0}
+                    bias={neuralNet.current ? neuralNet.current.bias : 0}
+                    output={neuralNet.current ? neuralNet.current.predict(currentInput) : 0}
+                    formula={vizProps.formula}
+                    inputLabel={vizProps.inputLabel}
+                    outputLabel={vizProps.outputLabel}
+                    biasLabel={vizProps.biasLabel}
                 />
             </div>
         </div>
