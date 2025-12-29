@@ -33,19 +33,28 @@ export function App() {
     const simId = params.get('sim') || 'physics';
     const config = getSimulationConfig(simId);
 
-    // Initialize Logic
-    groundTruth.current = new config.GroundTruth(...(config.groundTruthDefaults || []));
-    neuralNet.current = new config.Model();
-    // Defaults
-    if(config.defaultParams) {
-        if (config.defaultParams.weight !== undefined) neuralNet.current.setWeight(config.defaultParams.weight);
-        if (config.defaultParams.weights !== undefined && neuralNet.current.setWeights) neuralNet.current.setWeights(config.defaultParams.weights);
-        if (config.defaultParams.bias !== undefined) neuralNet.current.setBias(config.defaultParams.bias);
+    if (!config) {
+        setStatusMsg('Fehler: Simulation nicht gefunden.');
+        return;
     }
 
-    trainer.current = new ExhaustiveTrainer(neuralNet.current);
+    // Initialize Logic
+    try {
+        groundTruth.current = new config.GroundTruth(...(config.groundTruthDefaults || []));
+        neuralNet.current = new config.Model();
+        // Defaults
+        if(config.defaultParams) {
+            if (config.defaultParams.weight !== undefined) neuralNet.current.setWeight(config.defaultParams.weight);
+            if (config.defaultParams.weights !== undefined && neuralNet.current.setWeights) neuralNet.current.setWeights(config.defaultParams.weights);
+            if (config.defaultParams.bias !== undefined) neuralNet.current.setBias(config.defaultParams.bias);
+        }
 
-    setSimConfig(config);
+        trainer.current = new ExhaustiveTrainer(neuralNet.current);
+        setSimConfig(config);
+    } catch (e) {
+        console.error("Initialization Error:", e);
+        setStatusMsg(`Init Fehler: ${e.message}`);
+    }
   }, []);
 
   // Animation Loop for Simulation
@@ -113,26 +122,8 @@ export function App() {
 
             // Apply best params
             if (best.params) {
-                // New generic trainer
+                // Generic Trainer
                 if (neuralNet.current.setWeights) {
-                   // Filter bias out, similar to trainer logic
-                   // Note: The trainer stores bestParams as { weights: [], bias: val } in the new format
-                   // But history items are { params: [array], error }
-                   // Wait, my trainer implementation returned { bestParams: {...}, history: [] }
-                   // Let's use the result object returned from train() if possible, but here we are iterating history for animation.
-
-                   // Re-extract from history params array?
-                   // The trainer generic mode stores `params: [...]` in history.
-                   // We need to map these back to weights/bias.
-                   // Or just use the `bestParams` object returned by `train()` which we didn't save in state?
-                   // Let's just trust `bestParams` from the result.
-                   // Actually, we are computing best from history here again.
-                   // This is duplicate logic.
-
-                   // Let's check the history item structure
-                   // Generic: { params: [val1, val2...], error, mae }
-                   // Legacy: { weight, bias, error, mae }
-
                    const pConfig = simConfig.trainingConfig.params;
                    if (pConfig) {
                        const weights = [];
@@ -183,34 +174,47 @@ export function App() {
   }, [isTraining, trainingHistory, simConfig]);
 
   const handleGenerateData = () => {
-    if (!simConfig) return;
-    const data = simConfig.generateData(groundTruth.current);
-    setTrainingData(data);
-    setStatusMsg(`${data.length} Trainingsdaten generiert.`);
-    setActiveTab('data');
+    try {
+        if (!simConfig) return;
+        if (!groundTruth.current) throw new Error("Ground Truth not initialized");
+
+        const data = simConfig.generateData(groundTruth.current);
+        setTrainingData(data);
+        setStatusMsg(`${data.length} Trainingsdaten generiert.`);
+        setActiveTab('data');
+    } catch (e) {
+        console.error("Generate Data Error:", e);
+        setStatusMsg(`Fehler beim Generieren: ${e.message}`);
+    }
   };
 
   const handleTrain = () => {
-    if (trainingData.length === 0 || !simConfig) return;
+    try {
+        if (trainingData.length === 0 || !simConfig) return;
 
-    setIsTraining(true);
-    setTrainingStepIndex(0);
-    setStatusMsg('Suche optimales Gewicht und Bias...');
-    setActiveTab('training');
+        setIsTraining(true);
+        setTrainingStepIndex(0);
+        setStatusMsg('Suche optimales Gewicht und Bias...');
+        setActiveTab('training');
 
-    let result;
-    if (simConfig.trainingConfig.params) {
-        // Generic Trainer
-        result = trainer.current.train(trainingData, simConfig.trainingConfig.params);
-    } else {
-        // Legacy Trainer
-        result = trainer.current.train(
-            trainingData,
-            simConfig.trainingConfig.weightRange,
-            simConfig.trainingConfig.biasRange
-        );
+        let result;
+        if (simConfig.trainingConfig.params) {
+            // Generic Trainer
+            result = trainer.current.train(trainingData, simConfig.trainingConfig.params);
+        } else {
+            // Legacy Trainer
+            result = trainer.current.train(
+                trainingData,
+                simConfig.trainingConfig.weightRange,
+                simConfig.trainingConfig.biasRange
+            );
+        }
+        setTrainingHistory(result.history);
+    } catch (e) {
+        console.error("Training Error:", e);
+        setIsTraining(false);
+        setStatusMsg(`Fehler beim Training: ${e.message}`);
     }
-    setTrainingHistory(result.history);
   };
 
   const handleRun = () => {
@@ -226,10 +230,14 @@ export function App() {
     setTrainingData([]);
     setTrainingHistory([]);
     setTrainingStepIndex(-1);
-    if (neuralNet.current && simConfig?.defaultParams) {
-        if (simConfig.defaultParams.weight !== undefined) neuralNet.current.setWeight(simConfig.defaultParams.weight);
-        if (simConfig.defaultParams.weights !== undefined && neuralNet.current.setWeights) neuralNet.current.setWeights(simConfig.defaultParams.weights);
-        if (simConfig.defaultParams.bias !== undefined) neuralNet.current.setBias(simConfig.defaultParams.bias);
+    try {
+        if (neuralNet.current && simConfig?.defaultParams) {
+            if (simConfig.defaultParams.weight !== undefined) neuralNet.current.setWeight(simConfig.defaultParams.weight);
+            if (simConfig.defaultParams.weights !== undefined && neuralNet.current.setWeights) neuralNet.current.setWeights(simConfig.defaultParams.weights);
+            if (simConfig.defaultParams.bias !== undefined) neuralNet.current.setBias(simConfig.defaultParams.bias);
+        }
+    } catch (e) {
+        console.error("Reset Error:", e);
     }
     setStatusMsg('Reset durchgeführt.');
   };
@@ -283,9 +291,11 @@ export function App() {
                        {/* Pass current prediction to canvas so it can visualize it */}
                        {(() => {
                             let pred = 0;
-                            if (neuralNet.current) {
-                                pred = neuralNet.current.predict(currentInput);
-                            }
+                            try {
+                                if (neuralNet.current) {
+                                    pred = neuralNet.current.predict(currentInput);
+                                }
+                            } catch (e) { console.error("Predict Error", e); }
 
                             return (
                                 <CanvasComponent
