@@ -8,6 +8,30 @@ const pseudoRand = (seed) => {
   return x - Math.floor(x);
 };
 
+// Helper to analyze text to extract "Features"
+const analyze = (text) => {
+  // 1. Spam Words (Simple keyword match)
+  const spamKeywords = ['winner', 'won', 'gift card', 'urgent', 'rolex', 'viagra', 'cash', 'prize', 'singles', 'marketing', 'buy', 'free', 'money', 'security alert', 'click', 'claim', 'fake', 'verification'];
+  const lower = text.toLowerCase();
+  let spamCount = 0;
+  spamKeywords.forEach(k => {
+    if (lower.includes(k)) spamCount += 1; // Count actual matches
+  });
+  // Clamp
+  if (spamCount > 10) spamCount = 10;
+
+  // 2. Caps
+  const capsCount = (text.match(/[A-Z]/g) || []).length;
+
+  // 3. Links
+  const linkCount = (text.match(/http/g) || []).length;
+
+  // 4. Total Words
+  const wordCount = text.split(/\s+/).length;
+
+  return [spamCount, capsCount, linkCount, wordCount];
+};
+
 export const config = {
   id: 'spam_advanced',
   title: 'Phase 3: Erweiterter Spam-Filter (4 Eingaben)',
@@ -23,25 +47,29 @@ export const config = {
   },
 
   // Ground truth weights (hidden from user initially)
-  // 1. Spam Words (High positive)
-  // 2. Caps (Medium positive)
-  // 3. Links (High positive)
-  // 4. Total Words (Small negative - normalized)
   groundTruthDefaults: [[1.5, 0.5, 2.0, -0.5], -5],
 
   // Generate a random email vector based on time
   getInput: (time) => {
-    const seed = Math.floor(time * 10);
-    // 1. Spam Words: 0-10
-    const spamWords = Math.floor(pseudoRand(seed) * 11);
-    // 2. Caps: 0-20
-    const caps = Math.floor(pseudoRand(seed + 1) * 21);
-    // 3. Links: 0-5
-    const links = Math.floor(pseudoRand(seed + 2) * 6);
-    // 4. Total Words: 10-100 (Normalized for stability? Or raw? Let's keep raw but use small weight)
-    const totalWords = Math.floor(pseudoRand(seed + 3) * 90) + 10;
+    // Deterministic Selection based on time
+    const seed = Math.floor(time * 0.5); // Switch every 2 seconds roughly
 
-    return [spamWords, caps, links, totalWords];
+    // 50/50 Prob
+    const isSpam = pseudoRand(seed) > 0.5;
+    const list = isSpam ? config.examples.spam : config.examples.ham;
+
+    // Pick text
+    const textIdx = Math.floor(pseudoRand(seed + 99) * list.length);
+    const text = list[textIdx];
+
+    // Analyze
+    const features = analyze(text);
+
+    // Attach Metadata (using array properties to keep compatibility with Model.predict(array))
+    features.text = text;
+    features.groundTruth = isSpam ? 1 : 0;
+
+    return features;
   },
 
   // Example Texts for visualization
@@ -73,31 +101,6 @@ export const config = {
   },
 
   generateData: (groundTruth) => {
-    // Helper to analyze text to extract "Features"
-    const analyze = (text) => {
-      // 1. Spam Words (Simple keyword match)
-      // Some simple keywords often found in spam
-      const spamKeywords = ['winner', 'won', 'gift card', 'urgent', 'rolex', 'viagra', 'cash', 'prize', 'singles', 'marketing', 'buy', 'free', 'money', 'security alert', 'click', 'claim', 'fake', 'verification'];
-      const lower = text.toLowerCase();
-      let spamCount = 0;
-      spamKeywords.forEach(k => {
-        if (lower.includes(k)) spamCount += 1; // Count actual matches
-      });
-      // Clamp
-      if (spamCount > 10) spamCount = 10;
-
-      // 2. Caps
-      const capsCount = (text.match(/[A-Z]/g) || []).length;
-
-      // 3. Links
-      const linkCount = (text.match(/http/g) || []).length;
-
-      // 4. Total Words
-      const wordCount = text.split(/\s+/).length;
-
-      return [spamCount, capsCount, linkCount, wordCount];
-    };
-
     const data = [];
 
     // Process all Spam examples

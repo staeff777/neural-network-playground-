@@ -352,6 +352,70 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
             return;
         }
 
+        // --- TEXT VIEW MODE ---
+        if (viewMode === 'text') {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            if (!currentInput || !currentInput.text) {
+                ctx.fillStyle = '#999';
+                ctx.font = '20px sans-serif';
+                ctx.fillText("Kein Text verfügbar", width / 2, height / 2);
+                return;
+            }
+
+            // Draw Background based on Prediction
+            const isSpamPred = currentPrediction > 0.5;
+            const bgColor = isSpamPred ? '#feeff0' : '#effaf0'; // Light Red/Green
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, width, height);
+
+            // Text Wrapping
+            const text = currentInput.text;
+            ctx.fillStyle = '#333';
+            ctx.font = '24px serif';
+
+            const words = text.split(' ');
+            let line = '';
+            const lineHeight = 35;
+            const x = width / 2;
+            let y = height / 3;
+            const maxWidth = width - 100;
+
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = ctx.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    ctx.fillText(line, x, y);
+                    line = words[n] + ' ';
+                    y += lineHeight;
+                }
+                else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, x, y);
+
+            // Prediction & Ground Truth
+            y += 60;
+
+            // Ground Truth
+            const isSpamGT = currentInput.groundTruth === 1;
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillStyle = '#555';
+            ctx.fillText(`Wahrheit: ${isSpamGT ? 'SPAM' : 'HAM'}`, x, y);
+
+            y += 30;
+            // Prediction
+            const probPct = (currentPrediction * 100).toFixed(1);
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillStyle = isSpamPred ? '#c0392b' : '#27ae60';
+            ctx.fillText(`Vorhersage: ${isSpamPred ? 'SPAM' : 'HAM'} (${probPct}%)`, x, y);
+
+            return;
+        }
+
         // --- FEATURE HISTOGRAMS MODE (Original) ---
         const pad = 30;
         const w = (width - 3 * pad) / 2;
@@ -412,9 +476,10 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
                     <option value="features">Alle Features</option>
                     <option value="scatter">2D Plot</option>
                     <option value="3d">3D Plot</option>
+                    <option value="text">Text Mode</option>
                 </select>
 
-                {viewMode !== 'features' && (
+                {(viewMode === 'scatter' || viewMode === '3d') && (
                     <>
                         <span>X:</span>
                         <select value={xAxis} onChange={e => setXAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
