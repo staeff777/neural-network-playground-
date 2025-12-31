@@ -176,7 +176,8 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       }
 
       // Highlight Current Scanner Position (Red)
-      if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex <= limit) {
+      // Only show this WHILE training. Once done, it's distracting/irrelevant.
+      if (isTraining && currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex <= limit) {
         const curVal = getValue(history[currentStepIndex], currentStepIndex);
         const cx = mapX(curVal);
         const cy = mapY(history[currentStepIndex].error);
@@ -216,6 +217,14 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
     ctx.fill();
     ctx.fillStyle = '#333';
     ctx.fillText("Best So Far", legendX + 20, legendY + 38);
+
+    // Final Error Display
+    if (!isTraining && bestIdx >= 0) {
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`Min Error: ${minErr.toFixed(5)}`, width - 10, height - 10);
+    }
 
 
   }, [history, currentStepIndex, isTraining, paramsConfig]);

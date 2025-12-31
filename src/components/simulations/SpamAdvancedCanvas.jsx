@@ -21,6 +21,9 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
     const isDragging = useRef(false);
     const lastMouse = useRef({ x: 0, y: 0 });
 
+    // State for Tooltip
+    const [hoverInfo, setHoverInfo] = useState(null);
+
     const handleMouseDown = (e) => {
         if (viewMode !== '3d') return;
         isDragging.current = true;
@@ -28,20 +31,65 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
     };
 
     const handleMouseMove = (e) => {
-        if (!isDragging.current || viewMode !== '3d') return;
-        const deltaX = e.clientX - lastMouse.current.x;
-        const deltaY = e.clientY - lastMouse.current.y;
+        // Existing 3D rotation logic
+        if (isDragging.current && viewMode === '3d') {
+            const deltaX = e.clientX - lastMouse.current.x;
+            const deltaY = e.clientY - lastMouse.current.y;
 
-        setRotation(prev => ({
-            x: prev.x + deltaY * 0.01,
-            y: prev.y + deltaX * 0.01
-        }));
+            setRotation(prev => ({
+                x: prev.x + deltaY * 0.01,
+                y: prev.y + deltaX * 0.01
+            }));
 
-        lastMouse.current = { x: e.clientX, y: e.clientY };
+            lastMouse.current = { x: e.clientX, y: e.clientY };
+            return; // Exit if dragging in 3D
+        }
+
+        // New tooltip logic for scatter plot
+        if (viewMode === 'scatter') {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            let found = null;
+            const hitRadius = 10; // Radius for hit detection
+
+            const padding = 50;
+            const plotW = canvas.width - 2 * padding;
+            const plotH = canvas.height - 2 * padding;
+            const originX = padding;
+            const originY = canvas.height - padding;
+            const xMax = FEATURES[xAxis].max;
+            const yMax = FEATURES[yAxis].max;
+
+            if (data) {
+                for (const pt of data) {
+                    const x = originX + (pt.input[xAxis] / xMax) * plotW;
+                    const y = originY - (pt.input[yAxis] / yMax) * plotH;
+
+                    const dist = Math.sqrt((x - mx) ** 2 + (y - my) ** 2);
+                    if (dist < hitRadius) {
+                        found = { x, y, text: pt.text, isSpam: pt.target === 1 };
+                        break;
+                    }
+                }
+            }
+            setHoverInfo(found);
+        } else {
+            // If not in scatter mode and not dragging in 3D, clear hover info
+            setHoverInfo(null);
+        }
     };
 
     const handleMouseUp = () => {
         isDragging.current = false;
+    };
+
+    const handleMouseOut = () => {
+        setHoverInfo(null); // Clear tooltip when mouse leaves canvas
     };
 
     useEffect(() => {
@@ -56,7 +104,18 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
         ctx.fillRect(0, 0, width, height); // dynamic input needs clear background
 
         // --- 3D PLOT MODE ---
+        // Helper to find max value in data for a feature index
+        const getDataMax = (idx) => {
+            if (!data || data.length === 0) return FEATURES[idx].max;
+            const max = Math.max(...data.map(d => d.input[idx]));
+            return max > 0 ? max : FEATURES[idx].max; // Prevent 0 div
+        };
+
         if (viewMode === '3d') {
+            const xMax = getDataMax(xAxis);
+            const yMax = getDataMax(yAxis);
+            const zMax = getDataMax(zAxis);
+
             const cx = width / 2;
             const cy = height / 2;
             const size = 150; // Cube half-size
@@ -87,52 +146,65 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
             ];
             const projCorners = corners.map(c => project(c[0] * size, c[1] * size, c[2] * size));
 
-            // Edges
-            ctx.strokeStyle = '#eee';
-            ctx.beginPath();
-            const edges = [
-                [0, 1], [1, 2], [2, 3], [3, 0], // Front face
-                [4, 5], [5, 6], [6, 7], [7, 4], // Back face
-                [0, 4], [1, 5], [2, 6], [3, 7]  // Connecting
-            ];
-            edges.forEach(([s, e]) => {
-                ctx.moveTo(projCorners[s].x, projCorners[s].y);
-                ctx.lineTo(projCorners[e].x, projCorners[e].y);
-            });
-            ctx.stroke();
+            // Axis Colors
+            const colX = '#e29301ff'; // Dark Red
+            const colY = '#2980b9'; // Dark Blue
+            const colZ = '#c00798ff'; // Dark Orange
 
-            // Draw Axis Labels (Simple)
-            ctx.fillStyle = '#333';
-            ctx.font = '10px sans-serif';
+            // Draw Cube Edges (Axis-aligned coloring)
+            const drawEdges = (indices, color) => {
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                indices.forEach(([s, e]) => {
+                    ctx.moveTo(projCorners[s].x, projCorners[s].y);
+                    ctx.lineTo(projCorners[e].x, projCorners[e].y);
+                });
+                ctx.stroke();
+            };
+
+            // Indices based on corners array order:
+            // 0:[-1,-1,-1], 1:[1,-1,-1], 2:[1,1,-1], 3:[-1,1,-1] (Back Face Z=-1)
+            // 4:[-1,-1,1], 5:[1,-1,1], 6:[1,1,1], 7:[-1,1,1] (Front Face Z=1)
+
+            // X-Edges (moving along X, indices 0-1, 3-2, 4-5, 7-6)
+            drawEdges([[0, 1], [3, 2], [4, 5], [7, 6]], colX);
+
+            // Y-Edges (moving along Y, indices 0-3, 1-2, 4-7, 5-6)
+            drawEdges([[0, 3], [1, 2], [4, 7], [5, 6]], colY);
+
+            // Z-Edges (connecting back to front, 0-4, 1-5, 2-6, 3-7)
+            drawEdges([[0, 4], [1, 5], [2, 6], [3, 7]], colZ);
+
+            // Draw Axis Labels
+            ctx.font = 'bold 11px sans-serif';
+
+            ctx.fillStyle = colX;
             ctx.fillText("X: " + FEATURES[xAxis].label, projCorners[1].x, projCorners[1].y);
+
+            ctx.fillStyle = colY;
             ctx.fillText("Y: " + FEATURES[yAxis].label, projCorners[3].x, projCorners[3].y);
+
+            ctx.fillStyle = colZ;
             ctx.fillText("Z: " + FEATURES[zAxis].label, projCorners[4].x, projCorners[4].y);
 
             // Draw Points
             const pointsToDraw = [];
 
-            // Helper to normalize data -1 to 1
+            // Helper to normalize data -1 to 1 based on dynamic max
             const norm = (val, max) => (val / max) * 2 - 1;
 
             if (data) {
                 data.forEach(pt => {
-                    const vx = norm(pt.input[xAxis], FEATURES[xAxis].max);
-                    const vy = -norm(pt.input[yAxis], FEATURES[yAxis].max); // Y inverted in canvas
-                    const vz = norm(pt.input[zAxis], FEATURES[zAxis].max); // Z depth
+                    const vx = norm(pt.input[xAxis], xMax);
+                    const vy = -norm(pt.input[yAxis], yMax); // Y inverted in canvas
+                    const vz = norm(pt.input[zAxis], zMax); // Z depth
 
                     const proj = project(vx * size, vy * size, vz * size);
                     pointsToDraw.push({ ...proj, color: pt.target === 1 ? '#e74c3c' : '#2ecc71', radius: 3 });
                 });
             }
 
-            if (currentInput) {
-                const vx = norm(currentInput[xAxis], FEATURES[xAxis].max);
-                const vy = -norm(currentInput[yAxis], FEATURES[yAxis].max);
-                const vz = norm(currentInput[zAxis], FEATURES[zAxis].max);
-
-                const proj = project(vx * size, vy * size, vz * size);
-                pointsToDraw.push({ ...proj, color: '#3498db', radius: 5, border: true });
-            }
 
             // Sort by depth (Painter's algo)
             pointsToDraw.sort((a, b) => a.z - b.z);
@@ -154,39 +226,52 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
 
         // --- SCATTER PLOT MODE (2D) ---
         if (viewMode === 'scatter') {
+            const xMax = getDataMax(xAxis);
+            const yMax = getDataMax(yAxis);
+
             const padding = 50;
             const plotW = width - 2 * padding;
             const plotH = height - 2 * padding;
             const originX = padding;
             const originY = height - padding;
 
+            const colX = '#c0392b';
+            const colY = '#2980b9';
+
             // Axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 2;
+
+            // X Axis
             ctx.beginPath();
+            ctx.strokeStyle = colX;
             ctx.moveTo(originX, originY);
-            ctx.lineTo(originX + plotW, originY); // X
-            ctx.moveTo(originX, originY);
-            ctx.lineTo(originX, originY - plotH); // Y
+            ctx.lineTo(originX + plotW, originY);
             ctx.stroke();
 
-            // Labels
-            ctx.fillStyle = '#333';
-            ctx.font = '14px sans-serif';
+            // Y Axis
+            ctx.beginPath();
+            ctx.strokeStyle = colY;
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX, originY - plotH);
+            ctx.stroke();
+
+            // Labels with Max Values
             ctx.textAlign = 'center';
-            ctx.fillText(FEATURES[xAxis].label, originX + plotW / 2, originY + 35);
+            ctx.font = 'bold 14px sans-serif';
+
+            ctx.fillStyle = colX;
+            ctx.fillText(`${FEATURES[xAxis].label} (max: ${xMax})`, originX + plotW / 2, originY + 35);
 
             ctx.save();
             ctx.translate(15, originY - plotH / 2);
             ctx.rotate(-Math.PI / 2);
-            ctx.fillText(FEATURES[yAxis].label, 0, 0);
+            ctx.fillStyle = colY;
+            ctx.fillText(`${FEATURES[yAxis].label} (max: ${yMax})`, 0, 0);
             ctx.restore();
 
             const drawPoint = (input, color, radius, stroke) => {
                 const xVal = input[xAxis];
                 const yVal = input[yAxis];
-                const xMax = FEATURES[xAxis].max;
-                const yMax = FEATURES[yAxis].max;
 
                 const x = originX + (xVal / xMax) * plotW;
                 const y = originY - (yVal / yMax) * plotH;
@@ -219,6 +304,50 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
             ctx.textAlign = 'right';
             ctx.font = '11px sans-serif';
             ctx.fillText("Rot=Spam, Grün=OK", width - 10, 20);
+
+            // Tooltip Overlay
+            if (hoverInfo) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(0,0,0,0.85)';
+                ctx.strokeStyle = '#fff';
+
+                const text = hoverInfo.text || "No Text";
+                const label = hoverInfo.isSpam ? "SPAM" : "HAM";
+                const metrics = ctx.measureText(text);
+
+                const tw = Math.max(metrics.width, 100) + 20;
+                const th = 50;
+                let tx = hoverInfo.x + 15;
+                let ty = hoverInfo.y - 15;
+
+                // Canvas boundaries check
+                if (tx + tw > width) tx = hoverInfo.x - tw - 10;
+                if (ty + th > height) ty = hoverInfo.y - th - 10;
+                if (ty < 0) ty = hoverInfo.y + 20;
+
+                // Box
+                ctx.beginPath();
+                ctx.roundRect(tx, ty, tw, th, 5);
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Text
+                ctx.textBaseline = 'top';
+                ctx.textAlign = 'left';
+
+                // Label
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = hoverInfo.isSpam ? '#e74c3c' : '#2ecc71';
+                ctx.fillText(label, tx + 10, ty + 10);
+
+                // Content
+                ctx.font = 'italic 11px sans-serif';
+                ctx.fillStyle = '#ddd';
+                ctx.fillText(text, tx + 10, ty + 28);
+
+                ctx.restore();
+            }
 
             return;
         }
@@ -317,6 +446,7 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
+                onMouseOut={handleMouseOut}
             />
 
             <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>

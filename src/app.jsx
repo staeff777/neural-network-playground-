@@ -280,24 +280,47 @@ export function App() {
                 <div className="data-content">
                   {trainingData.length > 0 ? (
                     <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                      <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                      <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                         <thead>
-                          <tr style={{ background: '#eee' }}>
-                            <th style={{ padding: '5px' }}>Input ({Array.isArray(vizProps.inputLabels) ? 'Vektor' : vizProps.inputLabel})</th>
-                            <th style={{ padding: '5px' }}>Target ({vizProps.outputLabel})</th>
+                          <tr style={{ background: '#eee', borderBottom: '2px solid #ddd' }}>
+                            {/* Dynamic Header Generation */}
+                            {Array.isArray(vizProps.inputLabels) ? (
+                              vizProps.inputLabels.map((lbl, idx) => (
+                                <th key={idx} style={{ padding: '8px' }}>{lbl}</th>
+                              ))
+                            ) : (
+                              <th style={{ padding: '8px' }}>Input ({vizProps.inputLabel})</th>
+                            )}
+                            <th style={{ padding: '8px' }}>Target</th>
+                            <th style={{ padding: '8px' }}>E-Mail Text</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {trainingData.map((d, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                              <td style={{ padding: '5px' }}>
-                                {Array.isArray(d.input)
-                                  ? `[${d.input.map(v => v.toFixed(0)).join(', ')}]`
-                                  : d.input.toFixed(2)}
-                              </td>
-                              <td style={{ padding: '5px' }}>{d.target.toFixed(2)}</td>
-                            </tr>
-                          ))}
+                          {trainingData.map((d, i) => {
+                            // Color coding
+                            const isSpam = d.target === 1;
+                            const rowColor = isSpam ? '#ffebee' : '#e8f5e9'; // Light Red / Light Green
+
+                            return (
+                              <tr key={i} style={{ background: rowColor, borderBottom: '1px solid #ddd' }}>
+                                {/* Dynamic Feature Cells */}
+                                {Array.isArray(d.input) ? (
+                                  d.input.map((v, idx) => (
+                                    <td key={idx} style={{ padding: '8px' }}>{v.toFixed(0)}</td>
+                                  ))
+                                ) : (
+                                  <td style={{ padding: '8px' }}>{d.input.toFixed(2)}</td>
+                                )}
+
+                                <td style={{ padding: '8px', fontWeight: 'bold', color: isSpam ? '#c0392b' : '#27ae60' }}>
+                                  {isSpam ? 'SPAM' : 'HAM'}
+                                </td>
+                                <td style={{ padding: '8px', color: '#555', fontStyle: 'italic', maxWidth: '300px' }}>
+                                  {d.text || '-'}
+                                </td>
+                              </tr>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>

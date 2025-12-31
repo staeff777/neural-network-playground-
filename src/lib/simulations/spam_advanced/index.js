@@ -44,24 +44,95 @@ export const config = {
     return [spamWords, caps, links, totalWords];
   },
 
-  generateData: (groundTruth) => {
-    const data = [];
-    // Generate 50 emails
-    for (let i = 0; i < 50; i++) {
-      const seed = i * 1337;
-      const spamWords = Math.floor(pseudoRand(seed) * 11);
-      const caps = Math.floor(pseudoRand(seed + 1) * 21);
-      const links = Math.floor(pseudoRand(seed + 2) * 6);
-      const totalWords = Math.floor(pseudoRand(seed + 3) * 90) + 10;
+  // Example Texts for visualization
+  examples: {
+    spam: [
+      "WINNER! Won $1000 Gift Card! Claim at http://prize-giveaway.net",
+      "URGENT: Verify account at http://secure-bank-login.com/fraud",
+      "Cheap Rolex watches! 50% OFF at www.fake-watches.cn",
+      "Lose weight fast! Buy pills: http://diet-miracle.com",
+      "CONGRATS! Cash prize waiting: http://claim-money.org",
+      "HOT singles waiting! Chat now: http://local-dating.xyz",
+      "Refinance 1% APR. Apply: http://easy-loans.biz",
+      "Buy 1 get 1 FREE Viagra. http://meds-direct.com",
+      "Meet rich men. Signup: http://millionaire-match.com",
+      "SECURITY ALERT: Suspicious activity. Check http://account-security-check.com"
+    ],
+    ham: [
+      "Meeting agenda for tomorrow's team sync",
+      "Hey, are we still on for lunch?",
+      "Invoice #12345 from AWS Services",
+      "Project deadline extended to Friday",
+      "Happy Birthday! Hope you have a great day.",
+      "Can you review this pull request?",
+      "Your Amazon order has shipped.",
+      "Fwd: Tickets for the concert",
+      "Question about the quarterly report",
+      "Let's catch up sometime next week."
+    ],
+  },
 
-      const inputs = [spamWords, caps, links, totalWords];
-      const isSpam = groundTruth.classify(inputs);
+  generateData: (groundTruth) => {
+    // Helper to analyze text to extract "Features"
+    const analyze = (text) => {
+      // 1. Spam Words (Simple keyword match)
+      // Some simple keywords often found in spam
+      const spamKeywords = ['winner', 'won', 'gift card', 'urgent', 'rolex', 'viagra', 'cash', 'prize', 'singles', 'marketing', 'buy', 'free', 'money', 'security alert', 'click', 'claim', 'fake', 'verification'];
+      const lower = text.toLowerCase();
+      let spamCount = 0;
+      spamKeywords.forEach(k => {
+        if (lower.includes(k)) spamCount += 1; // Count actual matches
+      });
+      // Clamp
+      if (spamCount > 10) spamCount = 10;
+
+      // 2. Caps
+      const capsCount = (text.match(/[A-Z]/g) || []).length;
+
+      // 3. Links
+      const linkCount = (text.match(/http/g) || []).length;
+
+      // 4. Total Words
+      const wordCount = text.split(/\s+/).length;
+
+      return [spamCount, capsCount, linkCount, wordCount];
+    };
+
+    const data = [];
+
+    // Process all Spam examples
+    config.examples.spam.forEach(text => {
+      const inputs = analyze(text);
+      // Add slight jitter so identical emails don't perfectly overlap
+      const jitter = () => (Math.random() - 0.5) * 0.1;
+      const inputsJittered = inputs.map(v => Math.max(0, v + jitter()));
 
       data.push({
-        input: inputs,
-        target: isSpam
+        input: inputsJittered,
+        target: 1, // SPAM
+        text: text
       });
+    });
+
+    // Process all Ham examples
+    config.examples.ham.forEach(text => {
+      const inputs = analyze(text);
+      // Jitter
+      const inputsJittered = inputs.map(v => Math.max(0, v + (Math.random() - 0.5) * 0.1));
+
+      data.push({
+        input: inputsJittered,
+        target: 0, // HAM
+        text: text
+      });
+    });
+
+    // Shuffle data so Training doesn't see all Spam then all Ham
+    for (let i = data.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [data[i], data[j]] = [data[j], data[i]];
     }
+
     return data;
   },
 
