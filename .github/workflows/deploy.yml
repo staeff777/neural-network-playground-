@@ -29,14 +29,14 @@ jobs:
         with:
           node-version: "22"
           cache: 'npm'
-          cache-dependency-path: src/nn-demonstrator/package-lock.json
+          cache-dependency-path: src/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./src/nn-demonstrator
+        working-directory: ./src
         run: npm ci
 
       - name: Build
-        working-directory: ./src/nn-demonstrator
+        working-directory: ./src
         run: npm run build
 
       - name: Checkout gh-pages
