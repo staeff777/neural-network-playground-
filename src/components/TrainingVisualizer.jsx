@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'preact/hooks';
 
-export function TrainingVisualizer({ history, currentStepIndex, isTraining }) {
+export function TrainingVisualizer({ history, currentStepIndex, isTraining, paramsConfig }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -10,133 +10,223 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining }) {
     const width = canvas.width;
     const height = canvas.height;
 
-    // Split into two charts: Left (Weight vs Error), Right (Bias vs Error)
-    const chartWidth = width / 2;
-    const padding = 40;
-
     // Clear
     ctx.clearRect(0, 0, width, height);
 
-    // Find Scales
+    // Background
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, width, height);
+
+    // Globals
     const maxError = Math.max(...history.map(h => h.error));
-    // Weight Range
-    const wMin = Math.min(...history.map(h => h.weight));
-    const wMax = Math.max(...history.map(h => h.weight));
-    // Bias Range
-    const bMin = Math.min(...history.map(h => h.bias));
-    const bMax = Math.max(...history.map(h => h.bias));
+    // Determine visible history limit
+    const showAll = !isTraining && history.length > 0;
+    const limit = showAll
+      ? history.length - 1
+      : (currentStepIndex !== null && currentStepIndex >= 0)
+        ? Math.min(currentStepIndex, history.length - 1)
+        : -1;
 
-    // Mapping Functions
-    const mapY = (e) => height - padding - (e / maxError) * (height - 2 * padding);
+    // Find Best So Far
+    let bestIdx = -1;
+    let minErr = Infinity;
+    for (let i = 0; i <= limit; i++) {
+      if (history[i].error < minErr) {
+        minErr = history[i].error;
+        bestIdx = i;
+      }
+    }
 
-    const drawChart = (offsetX, xLabel, xMin, xMax, valueKey) => {
-      const mapX = (val) => offsetX + padding + (val - xMin) / (xMax - xMin) * (chartWidth - 2 * padding);
+    // --- CHART CONFIGURATION ---
+    let charts = [];
+
+    if (paramsConfig) {
+      // Generic Mode: One chart per parameter
+      // Determine Grid Layout
+      // Example: 5 params -> 3 cols, 2 rows.
+      const count = paramsConfig.length;
+      const cols = count >= 4 ? 3 : count;
+      const rows = Math.ceil(count / cols);
+
+      const chartW = width / cols;
+      const chartH = height / rows;
+
+      charts = paramsConfig.map((cfg, idx) => {
+        // Calculate ranges for this param
+        // Note: History params might go slightly outside config.min/max due to floats or logic, 
+        // but usually stick to it. safer to measure history.
+        const values = history.map(h => h.params[idx]);
+        const pMin = Math.min(...values);
+        const pMax = Math.max(...values);
+
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+
+        return {
+          xLabel: cfg.name,
+          xMin: pMin,
+          xMax: pMax,
+          getValue: (h, i) => h.params[idx],
+          offsetX: col * chartW,
+          offsetY: row * chartH,
+          w: chartW,
+          h: chartH
+        };
+      });
+
+    } else {
+      // Legacy Mode
+      const chartW = width / 2;
+      const valuesW = history.map(h => h.weight);
+      const valuesB = history.map(h => h.bias);
+
+      charts = [
+        {
+          xLabel: 'Weight',
+          xMin: Math.min(...valuesW),
+          xMax: Math.max(...valuesW),
+          getValue: (h) => h.weight,
+          offsetX: 0,
+          offsetY: 0,
+          w: chartW,
+          h: height
+        },
+        {
+          xLabel: 'Bias',
+          xMin: Math.min(...valuesB),
+          xMax: Math.max(...valuesB),
+          getValue: (h) => h.bias,
+          offsetX: chartW,
+          offsetY: 0,
+          w: chartW,
+          h: height
+        }
+      ];
+    }
+
+    // --- DRAWING LOOP ---
+    const padding = 35;
+
+    charts.forEach(chart => {
+      const { xLabel, xMin, xMax, getValue, offsetX, offsetY, w, h } = chart;
+
+      // Mappers
+      // Map Y (Error) fits within the chart height
+      const mapY = (e) => offsetY + h - padding - (e / (maxError || 1)) * (h - 2 * padding);
+      const mapX = (v) => offsetX + padding + (v - xMin) / ((xMax - xMin) || 1) * (w - 2 * padding);
+
+      // Chart Area Box
+      ctx.strokeStyle = '#eee';
+      ctx.strokeRect(offsetX, offsetY, w, h);
 
       // Axes
       ctx.beginPath();
       ctx.strokeStyle = '#333';
-      ctx.moveTo(offsetX + padding, padding);
-      ctx.lineTo(offsetX + padding, height - padding);
-      ctx.lineTo(offsetX + chartWidth - padding, height - padding);
+      ctx.lineWidth = 1;
+      // Y Axis
+      ctx.moveTo(offsetX + padding, offsetY + padding);
+      ctx.lineTo(offsetX + padding, offsetY + h - padding);
+      // X Axis
+      ctx.lineTo(offsetX + w - padding, offsetY + h - padding);
       ctx.stroke();
 
-      // Axis Labels
+      // Labels
       ctx.fillStyle = '#333';
-      ctx.font = '12px sans-serif';
+      ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(xLabel, offsetX + chartWidth / 2, height - 10);
+      ctx.fillText(xLabel, offsetX + w / 2, offsetY + h - 10);
 
-      // Y-Axis Label (only for left chart to avoid clutter, or duplicate if needed. User asked for ticks/values)
-      // We will duplicate ticks/values. Label maybe just for left.
+      // Y-Axis Title (Error) - only on leftmost charts
       if (offsetX === 0) {
         ctx.save();
-        ctx.translate(15, height / 2);
+        ctx.translate(offsetX + 10, offsetY + h / 2);
         ctx.rotate(-Math.PI / 2);
-        ctx.fillText('Error (MSE)', 0, 0);
+        ctx.fillText("Error", 0, 0);
         ctx.restore();
       }
 
-      // Ticks
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      // X Ticks (5 steps)
-      for(let i=0; i<=5; i++) {
-        const val = xMin + (xMax - xMin) * (i/5);
-        const x = mapX(val);
-        ctx.fillText(val.toFixed(0), x, height - padding + 12);
-        // Tick mark
-        ctx.beginPath();
-        ctx.moveTo(x, height - padding);
-        ctx.lineTo(x, height - padding + 4);
-        ctx.stroke();
-      }
+      // Ticks - simplified
+      ctx.fillStyle = '#666';
+      ctx.font = '9px sans-serif';
+      // X Min/Max
+      ctx.fillText(xMin.toFixed(1), offsetX + padding, offsetY + h - padding + 12);
+      ctx.fillText(xMax.toFixed(1), offsetX + w - padding, offsetY + h - padding + 12);
 
-      // Y Ticks (5 steps) - Draw for BOTH charts now
-      ctx.textAlign = 'right';
-      for(let i=0; i<=5; i++) {
-        const val = maxError * (i/5);
-        const y = mapY(val);
-        // Position relative to the current chart's y-axis (which is at offsetX + padding)
-        const xTick = offsetX + padding;
-        ctx.fillText(val.toFixed(0), xTick - 5, y + 3);
-            // Tick mark
-        ctx.beginPath();
-        ctx.moveTo(xTick, y);
-        ctx.lineTo(xTick - 4, y);
-        ctx.stroke();
-      }
-
-      // Plot Points (Scatter projection)
-      // If training finished, show ALL points. Else show up to current.
-      const showAll = !isTraining && history.length > 0;
-      const limit = showAll
-        ? history.length - 1
-        : (currentStepIndex !== null && currentStepIndex >= 0)
-            ? Math.min(currentStepIndex, history.length - 1)
-            : -1;
-
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
+      // Plot Points (Scattered cloud of all past evaluations)
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.4)'; // Blue transparent
       for (let i = 0; i <= limit; i++) {
-        const point = history[i];
-        const x = mapX(point[valueKey]);
-        const y = mapY(point.error);
+        const val = getValue(history[i], i);
+        const x = mapX(val);
+        const y = mapY(history[i].error);
         ctx.fillRect(x, y, 2, 2);
       }
 
-      // Highlight Current (or Best if finished)
-      if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex < history.length) {
-        const point = history[currentStepIndex];
-        const cx = mapX(point[valueKey]);
-        const cy = mapY(point.error);
+      // Highlight Best So Far (Green)
+      if (bestIdx >= 0) {
+        const bestVal = getValue(history[bestIdx], bestIdx);
+        const bx = mapX(bestVal);
+        const by = mapY(history[bestIdx].error);
 
         ctx.beginPath();
-        ctx.strokeStyle = '#e74c3c';
-        ctx.fillStyle = '#e74c3c';
+        ctx.fillStyle = '#2ecc71'; // Green
+        ctx.strokeStyle = '#27ae60';
+        ctx.arc(bx, by, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Highlight Current Scanner Position (Red)
+      if (currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex <= limit) {
+        const curVal = getValue(history[currentStepIndex], currentStepIndex);
+        const cx = mapX(curVal);
+        const cy = mapY(history[currentStepIndex].error);
+
+        ctx.beginPath();
+        ctx.fillStyle = '#e74c3c'; // Red
+        ctx.strokeStyle = '#c0392b';
         ctx.arc(cx, cy, 5, 0, Math.PI * 2);
         ctx.fill();
-
-        // Tooltip
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#e74c3c';
-        ctx.fillText(`${point[valueKey]}`, cx, cy - 8);
+        ctx.stroke();
       }
-    };
+    });
 
-    // Draw Chart 1: Weight vs Error
-    drawChart(0, 'Weight (w)', wMin, wMax, 'weight');
+    // Legend overlay (Top Right of total canvas)
+    const legendX = width - 120;
+    const legendY = 10;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillRect(legendX, legendY, 110, 50);
+    ctx.strokeStyle = '#ccc';
+    ctx.strokeRect(legendX, legendY, 110, 50);
 
-    // Draw Chart 2: Bias vs Error
-    drawChart(chartWidth, 'Bias (b)', bMin, bMax, 'bias');
+    ctx.textAlign = 'left';
+    ctx.font = '10px sans-serif';
 
-  }, [history, currentStepIndex, isTraining]);
+    // Red Dot
+    ctx.beginPath();
+    ctx.fillStyle = '#e74c3c';
+    ctx.arc(legendX + 10, legendY + 15, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.fillText("Current Scan", legendX + 20, legendY + 18);
+
+    // Green Dot
+    ctx.beginPath();
+    ctx.fillStyle = '#2ecc71';
+    ctx.arc(legendX + 10, legendY + 35, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.fillText("Best So Far", legendX + 20, legendY + 38);
+
+
+  }, [history, currentStepIndex, isTraining, paramsConfig]);
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
       <canvas
         ref={canvasRef}
         width={800}
-        height={300}
-        style={{ width: '100%' }}
+        height={400} // Increased height to accommodate rows
+        style={{ width: '100%', height: 'auto' }}
       />
     </div>
   );

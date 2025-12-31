@@ -356,10 +356,7 @@ export function App() {
                       history={trainingHistory}
                       currentStepIndex={trainingStepIndex}
                       isTraining={isTraining}
-                      // Only 2D visualizer works for now.
-                      // If generic params, we can't visualize 5D space easily.
-                      // Maybe show Error over Time graph instead?
-                      showGraph={!simConfig.trainingConfig.params}
+                      paramsConfig={simConfig.trainingConfig.params}
                     />
                   ) : (
                     <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>

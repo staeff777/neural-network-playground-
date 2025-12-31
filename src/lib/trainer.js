@@ -12,7 +12,6 @@ export class ExhaustiveTrainer {
       return this.trainLegacy(data, arg2, arg3);
     }
 
-    console.log({ arg2 });
 
     const paramsConfig = arg2; // Array of param configs
     const history = [];
@@ -91,8 +90,7 @@ export class ExhaustiveTrainer {
         }
 
         // History might be too large for multi-dim, only store if needed or sample?
-        // For 500 points it's fine.
-        console.log({ params: [...currentParams], error: mse, mae });
+        // For 500 points it's fine.        
         history.push({ params: [...currentParams], error: mse, mae });
         return;
       }
