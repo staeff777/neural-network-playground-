@@ -7,7 +7,7 @@ const FEATURES = [
     { label: "Gesamtworte", idx: 3, max: 100 }
 ];
 
-export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
+export function SpamAdvancedCanvas({ data, currentInput, currentPrediction, neuralNet }) {
     const canvasRef = useRef(null);
     const [viewMode, setViewMode] = useState('scatter'); // 'features', 'scatter', '3d'
 
@@ -194,6 +194,57 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
             // Helper to normalize data -1 to 1 based on dynamic max
             const norm = (val, max) => (val / max) * 2 - 1;
 
+            // --- DRAW DECISION PLANE (3D) ---
+            if (neuralNet && neuralNet.weights) {
+                const wX = neuralNet.weights[xAxis] || 0;
+                const wY = neuralNet.weights[yAxis] || 0;
+                const wZ = neuralNet.weights[zAxis] || 0;
+                const b = neuralNet.bias || 0;
+
+                // Equation: wX*x + wY*y + wZ*z + b = 0 => z = -(wX*x + wY*y + b) / wZ
+
+                if (Math.abs(wZ) > 0.001) {
+                    // Draw a grid on the plane
+                    ctx.strokeStyle = 'rgba(142, 68, 173, 0.3)'; // Semi-transparent Purple
+                    ctx.lineWidth = 1;
+
+                    const getZ = (vx, vy) => {
+                        const rx = (vx + 1) / 2 * xMax;
+                        const ry = (vy + 1) / 2 * yMax;
+                        const rz = (-wX * rx - wY * ry - b) / wZ;
+                        return norm(rz, zMax);
+                    };
+
+                    const drawPlaneLine = (p1, p2) => {
+                        if (Math.abs(p1.z) <= 3 && Math.abs(p2.z) <= 3) {
+                            const pp1 = project(p1.x * size, -p1.y * size, p1.z * size);
+                            const pp2 = project(p2.x * size, -p2.y * size, p2.z * size);
+                            ctx.beginPath();
+                            ctx.moveTo(pp1.x, pp1.y);
+                            ctx.lineTo(pp2.x, pp2.y);
+                            ctx.stroke();
+                        }
+                    };
+
+                    const steps = 6;
+                    // Grid Lines along X
+                    for (let i = 0; i <= steps; i++) {
+                        const vy = -1 + (i / steps) * 2;
+                        const z1 = getZ(-1, vy);
+                        const z2 = getZ(1, vy);
+                        drawPlaneLine({ x: -1, y: vy, z: z1 }, { x: 1, y: vy, z: z2 });
+                    }
+
+                    // Grid Lines along Y
+                    for (let i = 0; i <= steps; i++) {
+                        const vx = -1 + (i / steps) * 2;
+                        const z1 = getZ(vx, -1);
+                        const z2 = getZ(vx, 1);
+                        drawPlaneLine({ x: vx, y: -1, z: z1 }, { x: vx, y: 1, z: z2 });
+                    }
+                }
+            }
+
             if (data) {
                 data.forEach(pt => {
                     const vx = norm(pt.input[xAxis], xMax);
@@ -292,6 +343,70 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction }) {
                 data.forEach(pt => {
                     drawPoint(pt.input, pt.target === 1 ? '#e74c3c' : '#2ecc71', 5, '#fff');
                 });
+            }
+
+            // --- DRAW DECISION LINE (2D) ---
+            // Equation: wX*x + wY*y + b = 0  => y = (-wX*x - b) / wY
+            if (neuralNet) {
+                let weights = neuralNet.weights;
+                const bias = neuralNet.bias || 0;
+
+                // Handle legacy structure if needed, but spam_advanced uses .weights array
+                if (weights) {
+                    const wX = weights[xAxis] || 0;
+                    const wY = weights[yAxis] || 0;
+                    const b = bias;
+
+                    // We need to find two points on the edges of the plot to draw the line.
+                    // The plot shows x from 0 to xMax, y from 0 to yMax.
+                    // We'll calculate y for x=0 and x=xMax.
+
+                    // Helper to get pixel coordinates
+                    const toPix = (xVal, yVal) => {
+                        const px = originX + (xVal / xMax) * plotW;
+                        const py = originY - (yVal / yMax) * plotH;
+                        return { x: px, y: py };
+                    };
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#c0392b'; // Same red as Spam usually, or maybe purple? Let's use darker gray or specific style
+                    ctx.strokeStyle = 'rgba(142, 68, 173, 0.8)'; // Purple
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([10, 5]);
+
+                    // Case A: Not vertical
+                    if (Math.abs(wY) > 0.001) {
+                        const f = (x) => (-wX * x - b) / wY;
+
+                        const p1 = toPix(0, f(0));
+                        const p2 = toPix(xMax, f(xMax));
+
+                        // Note: We don't strictly clip to box here for simplicity, canvas clipping handles it effectively 
+                        // if we just draw long lines, BUT we want it to look nice.
+                        // Let's rely on Start/End points at x=0 and x=xMax.
+
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                    }
+                    // Case B: Vertical Line (wY is 0) => wX*x + b = 0 => x = -b/wX
+                    else if (Math.abs(wX) > 0.001) {
+                        const xVal = -b / wX;
+                        const p1 = toPix(xVal, 0);
+                        const p2 = toPix(xVal, yMax);
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                    }
+
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Draw Equation Label
+                    ctx.fillStyle = 'rgba(142, 68, 173, 1)';
+                    ctx.font = 'bold 12px monospace';
+                    ctx.textAlign = 'left';
+                    const eq = `${wX.toFixed(2)}x + ${wY.toFixed(2)}y + ${b.toFixed(2)} = 0`;
+                    ctx.fillText(eq, originX + 10, originY - plotH - 5);
+                }
             }
 
             // Draw Current
