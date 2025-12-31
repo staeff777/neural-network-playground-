@@ -82,7 +82,7 @@ jobs:
           mkdir -p "$TARGET_DIR"
 
           # Copy new content
-          cp -r src/nn-demonstrator/dist/* "$TARGET_DIR"/
+          cp -r src/dist/* "$TARGET_DIR"/
 
           # Commit and Push
           cd state
