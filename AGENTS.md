@@ -1,4 +1,4 @@
-# Jules Agent Instructions
+# Agent Instructions
 
 ## Project Overview
 This is a Neural Network Demonstrator web application built with Preact and Vite. It visualizes the difference between "Ground Truth" (physical/mathematical laws) and a simple Neural Network model attempting to learn those laws.
