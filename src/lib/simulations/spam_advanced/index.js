@@ -4,8 +4,8 @@ import { SpamAdvancedCanvas } from '../../../components/simulations/SpamAdvanced
 
 // Pseudo-random generator
 const pseudoRand = (seed) => {
-    const x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
 };
 
 export const config = {
@@ -47,20 +47,20 @@ export const config = {
   generateData: (groundTruth) => {
     const data = [];
     // Generate 50 emails
-    for(let i=0; i<50; i++) {
-        const seed = i * 1337;
-        const spamWords = Math.floor(pseudoRand(seed) * 11);
-        const caps = Math.floor(pseudoRand(seed + 1) * 21);
-        const links = Math.floor(pseudoRand(seed + 2) * 6);
-        const totalWords = Math.floor(pseudoRand(seed + 3) * 90) + 10;
+    for (let i = 0; i < 50; i++) {
+      const seed = i * 1337;
+      const spamWords = Math.floor(pseudoRand(seed) * 11);
+      const caps = Math.floor(pseudoRand(seed + 1) * 21);
+      const links = Math.floor(pseudoRand(seed + 2) * 6);
+      const totalWords = Math.floor(pseudoRand(seed + 3) * 90) + 10;
 
-        const inputs = [spamWords, caps, links, totalWords];
-        const isSpam = groundTruth.classify(inputs);
+      const inputs = [spamWords, caps, links, totalWords];
+      const isSpam = groundTruth.classify(inputs);
 
-        data.push({
-            input: inputs,
-            target: isSpam
-        });
+      data.push({
+        input: inputs,
+        target: isSpam
+      });
     }
     return data;
   },
@@ -71,13 +71,13 @@ export const config = {
   // 10 steps for bias = 810. Manageable.
   trainingConfig: {
     params: [
-        { name: 'w1 (Spam-Worte)', min: 0, max: 2, step: 1.0 }, // 0, 1, 2
-        { name: 'w2 (Großbuchst.)', min: 0, max: 1, step: 0.5 }, // 0, 0.5, 1
-        { name: 'w3 (Links)', min: 0, max: 3, step: 1.5 }, // 0, 1.5, 3
-        { name: 'w4 (Gesamtworte)', min: -1, max: 0, step: 0.5 }, // -1, -0.5, 0
-        { name: 'bias', min: -10, max: 0, step: 2 } // -10, -8, ..., 0 (6 steps)
+      { name: 'w1 (Spam-Worte)', min: -2, max: 2, step: 1.0 }, // 0, 1, 2
+      { name: 'w2 (Großbuchst.)', min: -1, max: 1, step: 0.5 }, // 0, 0.5, 1
+      { name: 'w3 (Links)', min: 0, max: 3, step: 1.5 }, // 0, 1.5, 3
+      { name: 'w4 (Gesamtworte)', min: -1, max: 0, step: 0.5 }, // -1, -0.5, 0
+      { name: 'bias', min: -10, max: 10, step: 2 } // -10, -8, ..., 0 (6 steps)
     ]
-    // Total iterations: 3 * 3 * 3 * 3 * 6 = 486. Very fast.
+
   },
 
   networkViz: {
