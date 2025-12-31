@@ -33,18 +33,28 @@ export function App() {
     const simId = params.get('sim') || 'physics';
     const config = getSimulationConfig(simId);
 
-    // Initialize Logic
-    groundTruth.current = new config.GroundTruth(...(config.groundTruthDefaults || []));
-    neuralNet.current = new config.Model();
-    // Defaults
-    if(config.defaultParams) {
-        if (config.defaultParams.weight !== undefined) neuralNet.current.setWeight(config.defaultParams.weight);
-        if (config.defaultParams.bias !== undefined) neuralNet.current.setBias(config.defaultParams.bias);
+    if (!config) {
+        setStatusMsg('Fehler: Simulation nicht gefunden.');
+        return;
     }
 
-    trainer.current = new ExhaustiveTrainer(neuralNet.current);
+    // Initialize Logic
+    try {
+        groundTruth.current = new config.GroundTruth(...(config.groundTruthDefaults || []));
+        neuralNet.current = new config.Model();
+        // Defaults
+        if(config.defaultParams) {
+            if (config.defaultParams.weight !== undefined) neuralNet.current.setWeight(config.defaultParams.weight);
+            if (config.defaultParams.weights !== undefined && neuralNet.current.setWeights) neuralNet.current.setWeights(config.defaultParams.weights);
+            if (config.defaultParams.bias !== undefined) neuralNet.current.setBias(config.defaultParams.bias);
+        }
 
-    setSimConfig(config);
+        trainer.current = new ExhaustiveTrainer(neuralNet.current);
+        setSimConfig(config);
+    } catch (e) {
+        console.error("Initialization Error:", e);
+        setStatusMsg(`Init Fehler: ${e.message}`);
+    }
   }, []);
 
   // Animation Loop for Simulation
@@ -109,43 +119,102 @@ export function App() {
               }
             });
             const best = trainingHistory[bestIndex];
-            neuralNet.current.setWeight(best.weight);
-            neuralNet.current.setBias(best.bias);
-            setStatusMsg(`Training fertig! w: ${best.weight}, b: ${best.bias}`);
+
+            // Apply best params
+            if (best.params) {
+                // Generic Trainer
+                if (neuralNet.current.setWeights) {
+                   const pConfig = simConfig.trainingConfig.params;
+                   if (pConfig) {
+                       const weights = [];
+                       let bias = 0;
+                       best.params.forEach((val, idx) => {
+                           if (pConfig[idx].name.toLowerCase().includes('bias')) bias = val;
+                           else weights.push(val);
+                       });
+                       neuralNet.current.setWeights(weights);
+                       neuralNet.current.setBias(bias);
+                   }
+                }
+            } else {
+                // Legacy
+                neuralNet.current.setWeight(best.weight);
+                neuralNet.current.setBias(best.bias);
+            }
+
+            setStatusMsg(`Training fertig! Error: ${minErr.toFixed(4)}`);
             return bestIndex;
           }
+
+          // Step Update
           const currentPoint = trainingHistory[next];
-          neuralNet.current.setWeight(currentPoint.weight);
-          neuralNet.current.setBias(currentPoint.bias);
+          if (currentPoint.params) {
+              // Generic
+               const pConfig = simConfig.trainingConfig.params;
+               if (pConfig) {
+                   const weights = [];
+                   let bias = 0;
+                   currentPoint.params.forEach((val, idx) => {
+                       if (pConfig[idx].name.toLowerCase().includes('bias')) bias = val;
+                       else weights.push(val);
+                   });
+                   neuralNet.current.setWeights(weights);
+                   neuralNet.current.setBias(bias);
+               }
+          } else {
+              // Legacy
+              neuralNet.current.setWeight(currentPoint.weight);
+              neuralNet.current.setBias(currentPoint.bias);
+          }
           return next;
         });
       }, 5);
     }
     return () => clearInterval(intervalId);
-  }, [isTraining, trainingHistory]);
+  }, [isTraining, trainingHistory, simConfig]);
 
   const handleGenerateData = () => {
-    if (!simConfig) return;
-    const data = simConfig.generateData(groundTruth.current);
-    setTrainingData(data);
-    setStatusMsg(`${data.length} Trainingsdaten generiert.`);
-    setActiveTab('data');
+    try {
+        if (!simConfig) return;
+        if (!groundTruth.current) throw new Error("Ground Truth not initialized");
+
+        const data = simConfig.generateData(groundTruth.current);
+        setTrainingData(data);
+        setStatusMsg(`${data.length} Trainingsdaten generiert.`);
+        setActiveTab('data');
+    } catch (e) {
+        console.error("Generate Data Error:", e);
+        setStatusMsg(`Fehler beim Generieren: ${e.message}`);
+    }
   };
 
   const handleTrain = () => {
-    if (trainingData.length === 0 || !simConfig) return;
+    try {
+        if (trainingData.length === 0 || !simConfig) return;
 
-    setIsTraining(true);
-    setTrainingStepIndex(0);
-    setStatusMsg('Suche optimales Gewicht und Bias...');
-    setActiveTab('training');
+        setIsTraining(true);
+        setTrainingStepIndex(0);
+        setStatusMsg('Suche optimales Gewicht und Bias...');
+        setActiveTab('training');
 
-    const { history } = trainer.current.train(
-        trainingData,
-        simConfig.trainingConfig.weightRange,
-        simConfig.trainingConfig.biasRange
-    );
-    setTrainingHistory(history);
+        let result;
+        if (simConfig.trainingConfig.params) {
+            // Generic Trainer
+            result = trainer.current.train(trainingData, simConfig.trainingConfig.params);
+        } else {
+            // Legacy Trainer
+            result = trainer.current.train(
+                trainingData,
+                simConfig.trainingConfig.weightRange,
+                simConfig.trainingConfig.biasRange
+            );
+        }
+        setTrainingHistory(result.history);
+    } catch (e) {
+        console.error("Training Error:", e);
+        setIsTraining(false);
+        setStatusMsg(`Fehler beim Training: ${e.message}`);
+    }
   };
 
   const handleRun = () => {
@@ -161,9 +230,14 @@ export function App() {
     setTrainingData([]);
     setTrainingHistory([]);
     setTrainingStepIndex(-1);
-    if (neuralNet.current && simConfig?.defaultParams) {
-        neuralNet.current.setWeight(simConfig.defaultParams.weight || 0);
-        neuralNet.current.setBias(simConfig.defaultParams.bias || 0);
+    try {
+        if (neuralNet.current && simConfig?.defaultParams) {
+            if (simConfig.defaultParams.weight !== undefined) neuralNet.current.setWeight(simConfig.defaultParams.weight);
+            if (simConfig.defaultParams.weights !== undefined && neuralNet.current.setWeights) neuralNet.current.setWeights(simConfig.defaultParams.weights);
+            if (simConfig.defaultParams.bias !== undefined) neuralNet.current.setBias(simConfig.defaultParams.bias);
+        }
+    } catch (e) {
+        console.error("Reset Error:", e);
     }
     setStatusMsg('Reset durchgeführt.');
   };
@@ -182,7 +256,8 @@ export function App() {
         <p>{simConfig.title}</p>
         <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
             <a href="?sim=physics" style={{ marginRight: '10px', fontWeight: simConfig.id==='physics'?'bold':'normal' }}>Phase 1 (Physik)</a>
-            <a href="?sim=spam" style={{ fontWeight: simConfig.id==='spam'?'bold':'normal' }}>Phase 2 (Spam)</a>
+            <a href="?sim=spam" style={{ marginRight: '10px', fontWeight: simConfig.id==='spam'?'bold':'normal' }}>Phase 2 (Spam)</a>
+            <a href="?sim=spam_advanced" style={{ fontWeight: simConfig.id==='spam_advanced'?'bold':'normal' }}>Phase 3 (Spam Extended)</a>
         </div>
       </header>
 
@@ -213,12 +288,27 @@ export function App() {
 
                   {activeTab === 'simulation' && (
                     <>
-                      <CanvasComponent
-                          time={time}
-                          input={currentInput}
-                          groundTruth={groundTruth.current}
-                          neuralNet={neuralNet.current}
-                      />
+                       {/* Pass current prediction to canvas so it can visualize it */}
+                       {(() => {
+                            let pred = 0;
+                            try {
+                                if (neuralNet.current) {
+                                    pred = neuralNet.current.predict(currentInput);
+                                }
+                            } catch (e) { console.error("Predict Error", e); }
+
+                            return (
+                                <CanvasComponent
+                                  time={time}
+                                  data={trainingData} // Some sims need data for visualization (like spam)
+                                  currentInput={currentInput}
+                                  currentPrediction={pred}
+                                  groundTruth={groundTruth.current}
+                                  neuralNet={neuralNet.current}
+                                />
+                            );
+                       })()}
+
                       <div className="stats" style={{ marginTop: '10px' }}>
                           <p>{simConfig.description}</p>
                           <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
@@ -233,14 +323,18 @@ export function App() {
                           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                             <thead>
                               <tr style={{ background: '#eee' }}>
-                                <th style={{ padding: '5px' }}>Input ({vizProps.inputLabel})</th>
+                                <th style={{ padding: '5px' }}>Input ({Array.isArray(vizProps.inputLabels) ? 'Vektor' : vizProps.inputLabel})</th>
                                 <th style={{ padding: '5px' }}>Target ({vizProps.outputLabel})</th>
                               </tr>
                             </thead>
                             <tbody>
                               {trainingData.map((d, i) => (
                                 <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                                  <td style={{ padding: '5px' }}>{d.input.toFixed(2)}</td>
+                                  <td style={{ padding: '5px' }}>
+                                    {Array.isArray(d.input)
+                                        ? `[${d.input.map(v => v.toFixed(0)).join(', ')}]`
+                                        : d.input.toFixed(2)}
+                                  </td>
                                   <td style={{ padding: '5px' }}>{d.target.toFixed(2)}</td>
                                 </tr>
                               ))}
@@ -262,6 +356,10 @@ export function App() {
                           history={trainingHistory}
                           currentStepIndex={trainingStepIndex}
                           isTraining={isTraining}
+                          // Only 2D visualizer works for now.
+                          // If generic params, we can't visualize 5D space easily.
+                          // Maybe show Error over Time graph instead?
+                          showGraph={!simConfig.trainingConfig.params}
                         />
                       ) : (
                          <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
@@ -276,11 +374,11 @@ export function App() {
             <div className="network-wrapper" style={{ flex: '0 0 350px' }}>
                 <NetworkVisualizer
                     input={currentInput}
-                    weight={neuralNet.current ? neuralNet.current.weight : 0}
+                    weight={neuralNet.current ? (neuralNet.current.weights || neuralNet.current.weight) : 0}
                     bias={neuralNet.current ? neuralNet.current.bias : 0}
                     output={neuralNet.current ? neuralNet.current.predict(currentInput) : 0}
                     formula={vizProps.formula}
-                    inputLabel={vizProps.inputLabel}
+                    inputLabel={vizProps.inputLabels || vizProps.inputLabel}
                     outputLabel={vizProps.outputLabel}
                     biasLabel={vizProps.biasLabel}
                 />
