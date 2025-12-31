@@ -52,7 +52,7 @@ export const config = {
   // Generate a random email vector based on time
   getInput: (time) => {
     // Deterministic Selection based on time
-    const seed = Math.floor(time * 0.5); // Switch every 2 seconds roughly
+    const seed = Math.floor(time * 0.3); // Switch every ~3.3 seconds (Time moves at 3.0x in app)
 
     // 50/50 Prob
     const isSpam = pseudoRand(seed) > 0.5;
