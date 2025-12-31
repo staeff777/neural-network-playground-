@@ -100,77 +100,6 @@ export function App() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isRunning, simConfig]);
 
-  // Training Loop
-  useEffect(() => {
-    let intervalId;
-    if (isTraining && trainingHistory.length > 0) {
-      intervalId = setInterval(() => {
-        setTrainingStepIndex(prev => {
-          const next = prev + 10;
-          if (next >= trainingHistory.length) {
-            setIsTraining(false);
-            let bestIndex = 0;
-            let minErr = Infinity;
-            trainingHistory.forEach((h, i) => {
-              if (h.error < minErr) {
-                minErr = h.error;
-                bestIndex = i;
-              }
-            });
-            const best = trainingHistory[bestIndex];
-
-            // Apply best params
-            if (best.params) {
-              // Generic Trainer
-              if (neuralNet.current.setWeights) {
-                const pConfig = simConfig.trainingConfig.params;
-                if (pConfig) {
-                  const weights = [];
-                  let bias = 0;
-                  best.params.forEach((val, idx) => {
-                    if (pConfig[idx].name.toLowerCase().includes('bias')) bias = val;
-                    else weights.push(val);
-                  });
-                  neuralNet.current.setWeights(weights);
-                  neuralNet.current.setBias(bias);
-                }
-              }
-            } else {
-              // Legacy
-              neuralNet.current.setWeight(best.weight);
-              neuralNet.current.setBias(best.bias);
-            }
-
-            setStatusMsg(`Training fertig! Error: ${minErr.toFixed(4)}`);
-            return bestIndex;
-          }
-
-          // Step Update
-          const currentPoint = trainingHistory[next];
-          if (currentPoint.params) {
-            // Generic
-            const pConfig = simConfig.trainingConfig.params;
-            if (pConfig) {
-              const weights = [];
-              let bias = 0;
-              currentPoint.params.forEach((val, idx) => {
-                if (pConfig[idx].name.toLowerCase().includes('bias')) bias = val;
-                else weights.push(val);
-              });
-              neuralNet.current.setWeights(weights);
-              neuralNet.current.setBias(bias);
-            }
-          } else {
-            // Legacy
-            neuralNet.current.setWeight(currentPoint.weight);
-            neuralNet.current.setBias(currentPoint.bias);
-          }
-          return next;
-        });
-      }, 5);
-    }
-    return () => clearInterval(intervalId);
-  }, [isTraining, trainingHistory, simConfig]);
 
   const handleGenerateData = () => {
     try {
@@ -187,29 +116,60 @@ export function App() {
     }
   };
 
-  const handleTrain = () => {
+  const handleTrain = async () => {
     try {
       if (trainingData.length === 0 || !simConfig) return;
 
       setIsTraining(true);
-      setTrainingStepIndex(0);
-      setStatusMsg('Suche optimales Gewicht und Bias...');
+      setTrainingStepIndex(0); // Will visually track the latest added point
+      setTrainingHistory([]); // Start fresh
+      setStatusMsg('Suche optimales Gewicht und Bias (Live Visualisierung)...');
       setActiveTab('training');
 
       const trainer = new ExhaustiveTrainer(neuralNet.current);
+
+      // Progress Callback
+      const handleProgress = (newChunk, bestSoFar) => {
+        // Append new points
+        setTrainingHistory(prev => {
+          const updated = [...prev, ...newChunk];
+          // Update Step Index to the end of the list to mimic "scanning cursor"
+          setTrainingStepIndex(updated.length - 1);
+          return updated;
+        });
+
+        // Optional: Live update of the model to the "Best So Far"
+        // This is cool because the user sees the model getting better in the "Neural Network" view instantly
+        if (bestSoFar && bestSoFar.bestParams) {
+          // Generic
+          if (neuralNet.current.setWeights) {
+            const { weights, bias } = bestSoFar.bestParams;
+            neuralNet.current.setWeights(weights);
+            neuralNet.current.setBias(bias);
+          }
+        } else if (bestSoFar && bestSoFar.bestWeight !== undefined) {
+          // Legacy
+          neuralNet.current.setWeight(bestSoFar.bestWeight);
+          neuralNet.current.setBias(bestSoFar.bestBias);
+        }
+      };
+
       let result;
       if (simConfig.trainingConfig.params) {
         // Generic Trainer
-        result = trainer.train(trainingData, simConfig.trainingConfig.params);
+        result = await trainer.trainAsync(trainingData, simConfig.trainingConfig.params, handleProgress);
       } else {
         // Legacy Trainer
-        result = trainer.train(
+        result = await trainer.trainAsync(
           trainingData,
           simConfig.trainingConfig.weightRange,
-          simConfig.trainingConfig.biasRange
+          simConfig.trainingConfig.biasRange,
+          handleProgress
         );
       }
-      setTrainingHistory(result.history);
+
+      setStatusMsg(`Training fertig! Min Error: ${result.minError.toFixed(5)}`);
+      setIsTraining(false);
     } catch (e) {
       console.error("Training Error:", e);
       setIsTraining(false);

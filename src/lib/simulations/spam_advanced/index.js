@@ -71,11 +71,11 @@ export const config = {
   // 10 steps for bias = 810. Manageable.
   trainingConfig: {
     params: [
-      { name: 'w1 (Spam-Worte)', min: -2, max: 2, step: 1.0 }, // 0, 1, 2
-      { name: 'w2 (Großbuchst.)', min: -1, max: 1, step: 0.5 }, // 0, 0.5, 1
-      { name: 'w3 (Links)', min: 0, max: 3, step: 1.5 }, // 0, 1.5, 3
-      { name: 'w4 (Gesamtworte)', min: -1, max: 0, step: 0.5 }, // -1, -0.5, 0
-      { name: 'bias', min: -10, max: 10, step: 2 } // -10, -8, ..., 0 (6 steps)
+      { name: 'w1 (Spam-Worte)', min: 1, max: 4, step: 0.5 }, // 0, 1, 2
+      { name: 'w2 (Großbuchst.)', min: 0, max: 2, step: 0.5 }, // 0, 0.5, 1
+      { name: 'w3 (Links)', min: 0, max: 3, step: 0.5 }, // 0, 1.5, 3
+      { name: 'w4 (Gesamtworte)', min: -2, max: 2, step: 0.5 }, // -1, -0.5, 0
+      { name: 'bias', min: -8, max: 8, step: 2 } // -10, -8, ..., 0 (6 steps)
     ]
 
   },
