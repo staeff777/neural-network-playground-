@@ -22,6 +22,7 @@ export function App() {
   const [trainingStepIndex, setTrainingStepIndex] = useState(-1);
   const [isTraining, setIsTraining] = useState(false);
   const [activeTab, setActiveTab] = useState('simulation');
+  const [trainerType, setTrainerType] = useState('exhaustive');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
 
   // Ref for tracking time delta
@@ -138,6 +139,17 @@ export function App() {
           return updated;
         });
 
+        if (bestSoFar && bestSoFar.message) {
+          setStatusMsg(bestSoFar.message);
+        } else {
+          // Only revert to generic message if NO message is passed, to avoid flickering?
+          // Actually, trainer only sends message transiently or sticky?
+          // Let's rely on standard status if no message.
+          // Or better: Let "statusMsg" stick for a bit.
+          // Simpler: Just set it if present.
+          if (bestSoFar && bestSoFar.message) setStatusMsg(bestSoFar.message);
+        }
+
         // Optional: Live update of the model to the "Best So Far"
         // This is cool because the user sees the model getting better in the "Neural Network" view instantly
         if (bestSoFar && bestSoFar.bestParams) {
@@ -155,7 +167,11 @@ export function App() {
       };
 
       let result;
-      if (simConfig.trainingConfig.params) {
+      if (trainerType === 'random') {
+        // Adaptive Random Trainer
+        setStatusMsg('Suche optimales Gewicht und Bias (Random Search)...');
+        result = await trainer.trainRandomAsync(trainingData, simConfig.trainingConfig.params, handleProgress);
+      } else if (simConfig.trainingConfig.params) {
         // Generic Trainer
         result = await trainer.trainAsync(trainingData, simConfig.trainingConfig.params, handleProgress);
       } else {
@@ -373,6 +389,8 @@ export function App() {
           isTraining={isTraining}
           trainingStep={trainingStepIndex}
           dataCount={trainingData.length}
+          trainerType={trainerType}
+          onTrainerTypeChange={setTrainerType}
         />
       </main>
     </div>

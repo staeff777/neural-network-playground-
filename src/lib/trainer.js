@@ -304,4 +304,200 @@ export class ExhaustiveTrainer {
 
     return { bestParams, minError };
   }
+
+  // --- Adaptive Random Search Trainer ---
+  // Starts with wide search radius, narrows down over time.
+  async trainRandomAsync(data, paramsConfig, onProgress) {
+    const MAX_STEPS = 10000;
+    const INITIAL_RADIUS_FACTOR = 0.5; // Start with searching 50% of the space
+    const DECAY = 0.992; // cay radius per step
+
+    let minError = Infinity;
+    let bestParams = {};
+
+    // 0. Initialize Dynamic Ranges
+    // We clone the config ranges so we can expand them if needed.
+    let dynamicRanges = paramsConfig.map(c => ({
+      min: c.min,
+      max: c.max,
+      span: c.max - c.min
+    }));
+
+    // 1. Initialize random starting point
+    let currentParamsArr = dynamicRanges.map(c => {
+      return c.min + Math.random() * c.span;
+    });
+
+    // Evaluate Initial
+    const evaluate = (paramArr) => {
+      // Decode
+      const weights = [];
+      let bias = 0;
+      paramArr.forEach((val, idx) => {
+        const name = paramsConfig[idx].name.toLowerCase();
+        if (name.includes('bias')) {
+          bias = val;
+        } else {
+          weights.push(val);
+        }
+      });
+
+      // Set
+      if (this.model.setWeights) {
+        this.model.setWeights(weights);
+      } else if (this.model.setWeight) {
+        this.model.setWeight(weights[0]);
+      }
+      this.model.setBias(bias);
+
+      // Calc Error
+      let errorSum = 0;
+      let absDiffSum = 0;
+      for (const point of data) {
+        const prediction = this.model.predict(point.input);
+        const diff = point.target - prediction;
+        errorSum += diff * diff;
+        absDiffSum += Math.abs(diff);
+      }
+      return { mse: errorSum / data.length, mae: absDiffSum / data.length, weights, bias };
+    };
+
+    let currentRes = evaluate(currentParamsArr);
+    minError = currentRes.mse;
+    bestParams = { weights: currentRes.weights, bias: currentRes.bias, _array: [...currentParamsArr] };
+
+    // Yield initial
+    if (onProgress) onProgress([{ params: [...currentParamsArr], error: minError, mae: currentRes.mae }], { bestParams, minError });
+    await new Promise(r => setTimeout(r, 0));
+
+
+    // 2. Loop
+    let chunk = [];
+    const CHUNK_SIZE = 10;
+
+    // SA State
+    let currentError = minError;
+    let currentBestParamsArray = [...currentParamsArr]; // The 'walker' position
+
+    for (let step = 0; step < MAX_STEPS; step++) {
+      // Two-Stage Logic
+      const PHASE_1_RATIO = 0.9;
+      const isPhase1 = step < MAX_STEPS * PHASE_1_RATIO;
+
+      // Temperature & Radius
+      // Phase 1: Keep Temperature higher for exploration. 
+      // Phase 2: Cool down for convergence.
+      let T, radiusFactor;
+
+      if (isPhase1) {
+        // Exploration: Slower decay
+        // Normalize step within phase
+        const progress = step / (MAX_STEPS * PHASE_1_RATIO);
+        T = 0.2 * (1 - progress * 0.5); // 0.2 -> 0.1
+        radiusFactor = INITIAL_RADIUS_FACTOR * (1 - progress * 0.5); // 0.5 -> 0.25 (Keep it reasonably large)
+      } else {
+        // Refinement: Standard cooling
+        const progress = (step - MAX_STEPS * PHASE_1_RATIO) / (MAX_STEPS * (1 - PHASE_1_RATIO));
+        T = 0.1 * (1 - progress); // 0.1 -> 0.0
+        radiusFactor = (INITIAL_RADIUS_FACTOR * 0.5) * Math.pow(DECAY, step - MAX_STEPS * PHASE_1_RATIO);
+      }
+
+      let extended = false;
+      const candidateArr = [...currentBestParamsArray]; // Copy walker
+
+      // Select params to mutate (Probabilistic to avoid coupled-noise interference)
+      // At least one param must mutate.
+      let mutated = false;
+      while (!mutated) {
+        candidateArr.forEach((val, idx) => {
+          if (Math.random() < 0.4) return; // 60% chance to mutate each (high flux) or tunable
+
+          mutated = true;
+          const range = dynamicRanges[idx];
+          let didExtend = false;
+
+          // --- Phase 1 Only: Dynamic Boundary Extension ---
+          if (isPhase1) {
+            const threshold = range.span * 0.15;
+
+            if (val < range.min + threshold) {
+              range.min -= range.span * 0.8;
+              range.span = range.max - range.min;
+              didExtend = true;
+            }
+            if (val > range.max - threshold) {
+              range.max += range.span * 0.8;
+              range.span = range.max - range.min;
+              didExtend = true;
+            }
+
+            if (didExtend) extended = true;
+          } else {
+          }
+
+          let effectiveRadius = range.span * radiusFactor;
+          // Boost radius if we just extended to explore new space
+          if (didExtend) {
+            effectiveRadius = Math.max(effectiveRadius, range.span * 0.25);
+          }
+
+          const r = effectiveRadius;
+          let newVal = val + (Math.random() - 0.5) * 2 * r;
+
+          if (newVal < range.min) newVal = range.min;
+          if (newVal > range.max) newVal = range.max;
+
+          candidateArr[idx] = newVal;
+        });
+
+        // Safety break if loop is weird, though forEach always runs once if array not empty.
+        // If random chance caused none to update, force update random one?
+        // Actually 'while(!mutated)' handles it by retrying the whole pass.
+      }
+
+      const res = evaluate(candidateArr);
+
+      // Metropolis Acceptance Criterion
+      const diff = res.mse - currentError;
+      let accept = false;
+
+      if (diff < 0) {
+        accept = true; // Always accept accumulation of improvement
+      } else {
+        // Accept with probability even if worse
+        const prob = Math.exp(-diff / (T + 1e-9));
+        if (Math.random() < prob) accept = true;
+      }
+
+      if (accept) {
+        currentBestParamsArray = candidateArr;
+        currentError = res.mse;
+      }
+
+      // Update Global Best separately
+      if (res.mse < minError) {
+        minError = res.mse;
+        bestParams = { weights: res.weights, bias: res.bias, _array: [...candidateArr] };
+      }
+
+      // Store history (User sees the Walker's attempts)
+      chunk.push({ params: [...candidateArr], error: res.mse, mae: res.mae });
+
+      // Yield
+      if (chunk.length >= CHUNK_SIZE) {
+        let msg = undefined;
+        if (extended) msg = "Grenzen dynamisch erweitert...";
+        if (onProgress) onProgress(chunk, { bestParams, minError, message: msg });
+        chunk = [];
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+
+    // Final flush
+    if (chunk.length > 0 && onProgress) {
+      onProgress(chunk, { bestParams, minError });
+    }
+
+    return { bestParams, minError };
+  }
 }
