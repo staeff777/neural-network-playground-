@@ -45,7 +45,7 @@ export function NetworkVisualizer({
   // Internal Layout Positions
   // Output is at boxRight.
   // Activation is to the left of Output.
-  const activationX = boxRight - 80;
+  const activationX = boxRight - 50;
   // Sum Point is to the left of Activation.
   const sumPointX = activationX - 60;
 
@@ -98,7 +98,7 @@ export function NetworkVisualizer({
 
                     {/* Weight Label - positioned along the line */}
                     <g transform={`translate(${(boxLeft + sumPointX) / 2 + (i - (numInputs - 1) / 2) * 5}, ${(y + centerY) / 2})`}>
-                      <rect x="-16" y="-9" width="32" height="18" fill="#fff" rx="4" stroke="#e0e0e0" />
+                      <rect x="-24" y="-9" width="50" height="18" fill="#fff" rx="4" stroke="#e0e0e0" />
                       <text x="0" y="4" textAnchor="middle" fill="#e74c3c" fontSize="10" fontWeight="bold">
                         {wVal.toFixed(1)}
                       </text>
@@ -108,11 +108,11 @@ export function NetworkVisualizer({
                     <circle cx={boxLeft} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" />
 
                     {/* Input Label (Further Left) */}
-                    <text x={boxLeft - 40} y={y} textAnchor="end" dominantBaseline="middle" fontWeight="bold" fontSize="14">
+                    <text x={boxLeft - 30} y={y} textAnchor="end" style={{ textAnchor: 'end' }} dominantBaseline="middle" fontWeight="bold" fontSize="14">
                       {label}
                     </text>
                     {/* Value */}
-                    <text x={boxLeft} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#333">
+                    <text x={boxLeft - 10} y={y + 2} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#333">
                       {val.toFixed(simConfig?.id === 'spam' || simConfig?.id === 'spam_advanced' ? 0 : 1)}
                     </text>
                   </g>
@@ -141,15 +141,15 @@ export function NetworkVisualizer({
 
               {/* Bias to Sum Point */}
               <path
-                d={`M ${activationX} ${biasY} Q ${activationX} ${centerY} ${sumPointX + 10} ${centerY}`}
+                d={`M ${activationX - 20} ${biasY} Q ${activationX - 20} ${centerY} ${sumPointX + 10} ${centerY}`}
                 fill="none"
                 stroke="#f39c12"
                 strokeWidth="1"
                 markerEnd="url(#arrowhead)"
               />
-              <circle cx={activationX} cy={biasY} r={12} fill="#f1c40f" stroke="#f39c12" />
-              <text x={activationX} y={biasY + 1} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#fff">b</text>
-              <text x={activationX + 18} y={biasY} textAnchor="start" dominantBaseline="middle" fontSize="12" fill="#f39c12" fontWeight="bold">
+              <circle cx={activationX - 20} cy={biasY} r={12} fill="#f1c40f" stroke="#f39c12" />
+              <text x={activationX - 23} y={biasY + 5} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="bold" fill="#fff">b</text>
+              <text x={activationX - 5} y={biasY + 5} textAnchor="start" dominantBaseline="middle" fontSize="12" fill="#f39c12" fontWeight="bold">
                 {bVal.toFixed(2)}
               </text>
 
@@ -159,12 +159,12 @@ export function NetworkVisualizer({
 
         {/* Output Node (On Right Boundary) */}
         <circle cx={boxRight} cy={centerY} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" />
-        <text x={boxRight} y={centerY} textAnchor="middle" dominantBaseline="middle" fontWeight="bold" fontSize="12">
+        <text x={boxRight - 14} y={centerY + 4} textAnchor="middle" dominantBaseline="middle" fontWeight="bold" fontSize="12">
           {outVal.toFixed(2)}
         </text>
 
         {/* Output Label (Further Right) */}
-        <text x={boxRight + 40} y={centerY} textAnchor="start" dominantBaseline="middle" fontWeight="bold" fontSize="14" fill="#333">
+        <text x={boxRight + 40} y={centerY + 4} textAnchor="start" dominantBaseline="middle" fontWeight="bold" fontSize="14" fill="#333">
           {outputLabel}
         </text>
 
