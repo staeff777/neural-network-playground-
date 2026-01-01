@@ -22,6 +22,7 @@ export function ControlPanel({
 
       <div style={{ borderLeft: '1px solid #ccc', paddingLeft: '10px', marginLeft: '10px', display: 'flex', gap: '5px', alignItems: 'center' }}>
         <select
+          aria-label="Trainingsmethode"
           value={trainerType}
           onChange={e => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}

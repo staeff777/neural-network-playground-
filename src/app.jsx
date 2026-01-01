@@ -241,20 +241,32 @@ export function App() {
         <div className="top-section" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'start' }}>
           <div className="simulation-wrapper" style={{ flex: '1 1 500px' }}>
             <div className="simulation-section">
-              <div className="tabs">
+              <div className="tabs" role="tablist">
                 <button
+                  id="tab-simulation"
+                  role="tab"
+                  aria-selected={activeTab === 'simulation'}
+                  aria-controls="panel-simulation"
                   className={`tab-button ${activeTab === 'simulation' ? 'active' : ''}`}
                   onClick={() => setActiveTab('simulation')}
                 >
                   Simulation
                 </button>
                 <button
+                  id="tab-data"
+                  role="tab"
+                  aria-selected={activeTab === 'data'}
+                  aria-controls="panel-data"
                   className={`tab-button ${activeTab === 'data' ? 'active' : ''}`}
                   onClick={() => setActiveTab('data')}
                 >
                   Trainingsdaten
                 </button>
                 <button
+                  id="tab-training"
+                  role="tab"
+                  aria-selected={activeTab === 'training'}
+                  aria-controls="panel-training"
                   className={`tab-button ${activeTab === 'training' ? 'active' : ''}`}
                   onClick={() => setActiveTab('training')}
                 >
@@ -263,7 +275,7 @@ export function App() {
               </div>
 
               {activeTab === 'simulation' && (
-                <>
+                <div role="tabpanel" id="panel-simulation" aria-labelledby="tab-simulation">
                   {/* Pass current prediction to canvas so it can visualize it */}
                   {(() => {
                     let pred = 0;
@@ -289,11 +301,11 @@ export function App() {
                     <p>{simConfig.description}</p>
                     <p style={{ color: '#646cff', fontWeight: 'bold' }}>Status: {statusMsg}</p>
                   </div>
-                </>
+                </div>
               )}
 
               {activeTab === 'data' && (
-                <div className="data-content">
+                <div className="data-content" role="tabpanel" id="panel-data" aria-labelledby="tab-data">
                   {trainingData.length > 0 ? (
                     <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                       <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -349,7 +361,7 @@ export function App() {
               )}
 
               {activeTab === 'training' && (
-                <div className="training-content">
+                <div className="training-content" role="tabpanel" id="panel-training" aria-labelledby="tab-training">
                   {trainingHistory.length > 0 ? (
                     <TrainingVisualizer
                       history={trainingHistory}
