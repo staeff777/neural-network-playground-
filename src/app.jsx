@@ -3,6 +3,7 @@ import { ExhaustiveTrainer } from './lib/trainer';
 import { TrainingVisualizer } from './components/TrainingVisualizer';
 import { NetworkVisualizer } from './components/NetworkVisualizer';
 import { ControlPanel } from './components/ControlPanel';
+import { ArchitectureGallery } from './components/debug/ArchitectureGallery';
 import { getSimulationConfig } from './lib/simulations/registry';
 import './app.css';
 
@@ -32,6 +33,12 @@ export function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const simId = params.get('sim') || 'physics';
+
+    if (simId === 'gallery') {
+      setSimConfig({ id: 'gallery', type: 'gallery' });
+      return;
+    }
+
     const config = getSimulationConfig(simId);
 
     if (!config) {
@@ -219,6 +226,23 @@ export function App() {
   };
 
   if (!simConfig) return <div>Lade Simulation...</div>;
+
+  if (simConfig.type === 'gallery') {
+    return (
+      <div className="container">
+        <header>
+          <h1>Neural Network Demonstrator</h1>
+          <p>Architecture Gallery (Debug)</p>
+          <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+            <a href="?sim=physics" style={{ marginRight: '10px' }}>Back to App</a>
+          </div>
+        </header>
+        <main>
+          <ArchitectureGallery />
+        </main>
+      </div>
+    )
+  }
 
   const CanvasComponent = simConfig.CanvasComponent;
   const vizProps = simConfig.networkViz || {};
