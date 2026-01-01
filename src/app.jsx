@@ -332,14 +332,34 @@ export function App() {
                               <th style={{ padding: '8px' }}>Input ({vizProps.inputLabel})</th>
                             )}
                             <th style={{ padding: '8px' }}>Target</th>
-                            <th style={{ padding: '8px' }}>E-Mail Text</th>
+                            {trainingData.length > 0 && trainingData[0].text && (
+                              <th style={{ padding: '8px' }}>E-Mail Text</th>
+                            )}
                           </tr>
                         </thead>
                         <tbody>
                           {trainingData.map((d, i) => {
-                            // Color coding
-                            const isSpam = d.target === 1;
-                            const rowColor = isSpam ? '#ffebee' : '#e8f5e9'; // Light Red / Light Green
+                            // Determine display mode based on simConfig
+                            const isClassification = ['spam', 'spam_advanced'].includes(simConfig.id);
+
+                            // Color coding (only for classification)
+                            let rowColor = 'transparent';
+                            let displayTarget = d.target;
+                            let targetStyle = { padding: '8px' };
+
+                            if (isClassification) {
+                              const isSpam = d.target === 1;
+                              rowColor = isSpam ? '#ffebee' : '#e8f5e9'; // Light Red / Light Green
+                              displayTarget = isSpam ? 'SPAM' : 'HAM';
+                              targetStyle = {
+                                ...targetStyle,
+                                fontWeight: 'bold',
+                                color: isSpam ? '#c0392b' : '#27ae60'
+                              };
+                            } else {
+                              // Regression / Physics
+                              displayTarget = typeof d.target === 'number' ? d.target.toFixed(2) : d.target;
+                            }
 
                             return (
                               <tr key={i} style={{ background: rowColor, borderBottom: '1px solid #ddd' }}>
@@ -352,12 +372,14 @@ export function App() {
                                   <td style={{ padding: '8px' }}>{d.input.toFixed(2)}</td>
                                 )}
 
-                                <td style={{ padding: '8px', fontWeight: 'bold', color: isSpam ? '#c0392b' : '#27ae60' }}>
-                                  {isSpam ? 'SPAM' : 'HAM'}
+                                <td style={targetStyle}>
+                                  {displayTarget}
                                 </td>
-                                <td style={{ padding: '8px', color: '#555', fontStyle: 'italic', maxWidth: '300px' }}>
-                                  {d.text || '-'}
-                                </td>
+                                {d.text && (
+                                  <td style={{ padding: '8px', color: '#555', fontStyle: 'italic', maxWidth: '300px' }}>
+                                    {d.text}
+                                  </td>
+                                )}
                               </tr>
                             )
                           })}
