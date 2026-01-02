@@ -241,20 +241,32 @@ export function App() {
         <div className="top-section" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'start' }}>
           <div className="simulation-wrapper" style={{ flex: '1 1 500px' }}>
             <div className="simulation-section">
-              <div className="tabs">
+              <div className="tabs" role="tablist" aria-label="Ansichten">
                 <button
+                  id="tab-simulation"
+                  role="tab"
+                  aria-selected={activeTab === 'simulation'}
+                  aria-controls="panel-simulation"
                   className={`tab-button ${activeTab === 'simulation' ? 'active' : ''}`}
                   onClick={() => setActiveTab('simulation')}
                 >
                   Simulation
                 </button>
                 <button
+                  id="tab-data"
+                  role="tab"
+                  aria-selected={activeTab === 'data'}
+                  aria-controls="panel-data"
                   className={`tab-button ${activeTab === 'data' ? 'active' : ''}`}
                   onClick={() => setActiveTab('data')}
                 >
                   Trainingsdaten
                 </button>
                 <button
+                  id="tab-training"
+                  role="tab"
+                  aria-selected={activeTab === 'training'}
+                  aria-controls="panel-training"
                   className={`tab-button ${activeTab === 'training' ? 'active' : ''}`}
                   onClick={() => setActiveTab('training')}
                 >
@@ -262,6 +274,7 @@ export function App() {
                 </button>
               </div>
 
+              <div role="tabpanel" id="panel-simulation" aria-labelledby="tab-simulation" hidden={activeTab !== 'simulation'}>
               {activeTab === 'simulation' && (
                 <>
                   {/* Pass current prediction to canvas so it can visualize it */}
@@ -291,7 +304,9 @@ export function App() {
                   </div>
                 </>
               )}
+              </div>
 
+              <div role="tabpanel" id="panel-data" aria-labelledby="tab-data" hidden={activeTab !== 'data'}>
               {activeTab === 'data' && (
                 <div className="data-content">
                   {trainingData.length > 0 ? (
@@ -347,7 +362,9 @@ export function App() {
                   )}
                 </div>
               )}
+              </div>
 
+              <div role="tabpanel" id="panel-training" aria-labelledby="tab-training" hidden={activeTab !== 'training'}>
               {activeTab === 'training' && (
                 <div className="training-content">
                   {trainingHistory.length > 0 ? (
@@ -364,6 +381,7 @@ export function App() {
                   )}
                 </div>
               )}
+              </div>
             </div>
           </div>
 
