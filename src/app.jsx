@@ -426,6 +426,7 @@ export function App() {
               inputLabel={vizProps.inputLabels || vizProps.inputLabel}
               outputLabel={vizProps.outputLabel}
               biasLabel={vizProps.biasLabel}
+              decimals={simConfig.id.includes('spam') ? 0 : 1}
             />
           </div>
         </div>

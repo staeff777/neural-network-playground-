@@ -9,6 +9,7 @@ export function NetworkVisualizer({
   inputLabel = "Input",   // can be string or array
   outputLabel = "Output",
   biasLabel = "b",
+  decimals = 1,
   model = null
 }) {
   if (model && model.getTopology) {
@@ -125,12 +126,12 @@ export function NetworkVisualizer({
                     <circle cx={boxLeft} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" />
 
                     {/* Input Label (Further Left) */}
-                    <text x={boxLeft - 30} y={y} textAnchor="end" style={{ textAnchor: 'end' }} dominantBaseline="middle" fontWeight="bold" fontSize="14">
+                    <text x={boxLeft - 40} y={y} textAnchor="end" dominantBaseline="middle" fontWeight="bold" fontSize="14">
                       {label}
                     </text>
                     {/* Value */}
-                    <text x={boxLeft - 10} y={y + 2} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#333">
-                      {val.toFixed(simConfig?.id === 'spam' || simConfig?.id === 'spam_advanced' ? 0 : 1)}
+                    <text x={boxLeft} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#333">
+                      {val.toFixed(decimals)}
                     </text>
                   </g>
                 );
