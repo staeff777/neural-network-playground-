@@ -48,68 +48,116 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
     let charts = [];
 
     if (paramsConfig) {
+      // Create a virtual list of "all plots"
+      // Item 0: Error over Step
+      // Item 1..N: Each Param
+      const totalVisualizations = 1 + paramsConfig.length;
+
       // Pagination Logic
       const startIdx = page * itemsPerPage;
-      const endIdx = Math.min(startIdx + itemsPerPage, paramsConfig.length);
-      const visibleParams = paramsConfig.slice(startIdx, endIdx);
+      const endIdx = Math.min(startIdx + itemsPerPage, totalVisualizations);
 
       // Determine Grid Layout
-      const count = visibleParams.length;
+      const count = endIdx - startIdx;
       const cols = 3;
       const rows = 2; // Fixed 3x2 grid for max 6
 
       const chartW = width / cols;
       const chartH = height / rows;
 
-      charts = visibleParams.map((cfg, relIdx) => {
-        const globalIdx = startIdx + relIdx;
-
-        // Calculate ranges for this param
-        const values = history.map(h => h.params[globalIdx]);
-        const pMin = Math.min(...values);
-        const pMax = Math.max(...values);
-
+      // Generate charts for visible items
+      for (let i = startIdx; i < endIdx; i++) {
+        const relIdx = i - startIdx;
         const col = relIdx % cols;
         const row = Math.floor(relIdx / cols);
 
-        return {
-          xLabel: cfg.name,
-          xMin: pMin,
-          xMax: pMax,
-          getValue: (h, i) => h.params[globalIdx],
-          offsetX: col * chartW,
-          offsetY: row * chartH,
-          w: chartW,
-          h: chartH
-        };
-      });
+        const offsetX = col * chartW;
+        const offsetY = row * chartH;
+
+        if (i === 0) {
+          // --- PLOT 0: ERROR OVER STEP ---
+          // X: Step Index (0..history.length-1)
+          // Y: Error
+          const xMax = Math.max(10, history.length - 1);
+
+          charts.push({
+            type: 'error_step',
+            xLabel: 'Training Step',
+            xMin: 0,
+            xMax: xMax,
+            getValue: (h, idx) => idx, // The "value" for X-axis is the index itself
+            offsetX,
+            offsetY,
+            w: chartW,
+            h: chartH
+          });
+
+        } else {
+          // --- PLOT 1..N: PARAM OVER ERROR ---
+          const paramIdx = i - 1; // Shift back to get param index
+          const cfg = paramsConfig[paramIdx];
+
+          // Calculate ranges for this param
+          const values = history.map(h => h.params[paramIdx]);
+          const pMin = Math.min(...values);
+          const pMax = Math.max(...values);
+
+          charts.push({
+            type: 'param_error',
+            xLabel: cfg.name,
+            xMin: pMin,
+            xMax: pMax,
+            getValue: (h) => h.params[paramIdx],
+            offsetX,
+            offsetY,
+            w: chartW,
+            h: chartH
+          });
+        }
+      }
 
     } else {
-      // Legacy Mode
-      const chartW = width / 2;
+      // Legacy Mode (Phase 1 & 2)
+      // Charts: Error vs Step, Weight vs Error, Bias vs Error
+      // Layout: 3 columns, 1 row (Full Height)
+      const chartW = width / 3;
+      const chartH = height; // Single row, full height matches previous style better than small grids
+
       const valuesW = history.map(h => h.weight);
       const valuesB = history.map(h => h.bias);
+      const xMaxStep = Math.max(10, history.length - 1);
 
       charts = [
+        {
+          type: 'error_step',
+          xLabel: 'Training Step',
+          xMin: 0,
+          xMax: xMaxStep,
+          getValue: (h, idx) => idx,
+          offsetX: 0,
+          offsetY: 0,
+          w: chartW,
+          h: chartH
+        },
         {
           xLabel: 'Weight',
           xMin: Math.min(...valuesW),
           xMax: Math.max(...valuesW),
           getValue: (h) => h.weight,
-          offsetX: 0,
+          offsetX: chartW,
           offsetY: 0,
           w: chartW,
-          h: height
+          h: chartH
         },
         {
           xLabel: 'Bias',
           xMin: Math.min(...valuesB),
           xMax: Math.max(...valuesB),
           getValue: (h) => h.bias,
-          offsetX: chartW,
+          offsetX: 2 * chartW,
           offsetY: 0,
           w: chartW,
-          h: height
+          h: chartH
         }
       ];
     }
@@ -242,7 +290,7 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
   }, [history, currentStepIndex, isTraining, paramsConfig, page]);
 
-  const totalPages = paramsConfig ? Math.ceil(paramsConfig.length / itemsPerPage) : 1;
+  const totalPages = paramsConfig ? Math.ceil((paramsConfig.length + 1) / itemsPerPage) : 1;
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
