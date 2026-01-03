@@ -89,6 +89,15 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
     setHoverInfo(null);
   };
 
+  const lastClickRef = useRef(0);
+  const handleClick = () => {
+    const now = Date.now();
+    if (now - lastClickRef.current < 300) {
+      setHoverInfo(null);
+    }
+    lastClickRef.current = now;
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -418,6 +427,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
       />
     </div>
   );

@@ -140,6 +140,15 @@ export function SpamAdvancedCanvas({
         isDragging.current = false;
     };
 
+    const lastClickRef = useRef(0);
+    const handleClick = () => {
+        const now = Date.now();
+        if (now - lastClickRef.current < 300) {
+            setHoverInfo(null);
+        }
+        lastClickRef.current = now;
+    };
+
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -795,6 +804,7 @@ export function SpamAdvancedCanvas({
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
                 onMouseOut={handleMouseOut}
+                onClick={handleClick}
             />
 
             {!hideControls && (
