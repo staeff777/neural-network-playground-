@@ -610,7 +610,7 @@ export function App() {
 
           {/* Network Wrapper */}
           <div className="network-wrapper" style={{
-            flex: maximizedPanel === 'network' ? '1 0 100%' : (maximizedPanel === 'simulation' ? '0 0 0%' : '0 0 350px'),
+            flex: maximizedPanel === 'network' ? '1 0 100%' : (maximizedPanel === 'simulation' ? '0 0 0%' : `0 0 ${simConfig.id === 'spam_hidden' ? '500px' : '350px'}`),
             opacity: maximizedPanel === 'simulation' ? 0 : 1,
             overflow: 'hidden',
             maxWidth: maximizedPanel === 'simulation' ? '0px' : '100%',
