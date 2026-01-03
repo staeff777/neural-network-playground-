@@ -250,12 +250,25 @@ export class ExhaustiveTrainer {
         });
 
         // 2. Set Model
-        if (this.model.setWeights) {
-          this.model.setWeights(weights);
-        } else if (this.model.setWeight) {
-          this.model.setWeight(weights[0]);
+        // 2. Set Model
+        let decodedParams = {};
+        if (this.model.setParams) {
+          currentParams.forEach((val, idx) => {
+            decodedParams[paramsConfig[idx].name] = val;
+          });
+          this.model.setParams(decodedParams);
+
+          // For bestParams storage
+          if (bias === undefined) bias = 0; // fallback
+        } else {
+          if (this.model.setWeights) {
+            this.model.setWeights(weights);
+          } else if (this.model.setWeight) {
+            this.model.setWeight(weights[0]);
+          }
+          this.model.setBias(bias);
+          decodedParams = { weights: [...weights], bias };
         }
-        this.model.setBias(bias);
 
         // 3. Calc Error
         let errorSum = 0;
@@ -271,7 +284,7 @@ export class ExhaustiveTrainer {
 
         if (mse < minError) {
           minError = mse;
-          bestParams = { weights: [...weights], bias };
+          bestParams = decodedParams;
         }
 
         // Store
@@ -343,12 +356,21 @@ export class ExhaustiveTrainer {
       });
 
       // Set
-      if (this.model.setWeights) {
-        this.model.setWeights(weights);
-      } else if (this.model.setWeight) {
-        this.model.setWeight(weights[0]);
+      let decodedParams = {};
+      if (this.model.setParams) {
+        paramArr.forEach((val, idx) => {
+          decodedParams[paramsConfig[idx].name] = val;
+        });
+        this.model.setParams(decodedParams);
+      } else {
+        if (this.model.setWeights) {
+          this.model.setWeights(weights);
+        } else if (this.model.setWeight) {
+          this.model.setWeight(weights[0]);
+        }
+        this.model.setBias(bias);
+        decodedParams = { weights, bias };
       }
-      this.model.setBias(bias);
 
       // Calc Error
       let errorSum = 0;
@@ -359,12 +381,12 @@ export class ExhaustiveTrainer {
         errorSum += diff * diff;
         absDiffSum += Math.abs(diff);
       }
-      return { mse: errorSum / data.length, mae: absDiffSum / data.length, weights, bias };
+      return { mse: errorSum / data.length, mae: absDiffSum / data.length, decodedParams, weights, bias };
     };
 
     let currentRes = evaluate(currentParamsArr);
     minError = currentRes.mse;
-    bestParams = { weights: currentRes.weights, bias: currentRes.bias, _array: [...currentParamsArr] };
+    bestParams = currentRes.decodedParams || { weights: currentRes.weights, bias: currentRes.bias, _array: [...currentParamsArr] };
 
     // Yield initial
     if (onProgress) onProgress([{ params: [...currentParamsArr], error: minError, mae: currentRes.mae }], { bestParams, minError });

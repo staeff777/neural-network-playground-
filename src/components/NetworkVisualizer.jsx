@@ -1,3 +1,5 @@
+import { LayeredNetworkVisualizer } from './LayeredNetworkVisualizer';
+
 export function NetworkVisualizer({
   input,       // can be number or array
   weight,      // can be number or array
@@ -6,8 +8,23 @@ export function NetworkVisualizer({
   formula = "y = w * x + b",
   inputLabel = "Input",   // can be string or array
   outputLabel = "Output",
-  biasLabel = "b"
+  biasLabel = "b",
+  model = null
 }) {
+  if (model && model.getTopology) {
+    // Normalize inputs
+    const inputs = Array.isArray(input) ? input : [input];
+    const inpLabels = Array.isArray(inputLabel) ? inputLabel : [inputLabel];
+
+    return <LayeredNetworkVisualizer
+      model={model}
+      inputs={inputs}
+      inputLabels={inpLabels}
+      output={output}
+      outputLabel={outputLabel}
+    />;
+  }
+
   // Normalize inputs to arrays
   const inputs = Array.isArray(input) ? input : [input];
   const weights = Array.isArray(weight) ? weight : [weight];
@@ -182,5 +199,4 @@ export function NetworkVisualizer({
 // Actually `simConfig` isn't in scope here. I used it for `toFixed`.
 // I'll just use a safe default or pass a prop if needed. 
 // For now, toFixed(1) for generic inputs is fine.
-const simConfig = {};
 

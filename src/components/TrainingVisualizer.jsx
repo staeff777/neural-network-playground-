@@ -1,7 +1,14 @@
-import { useRef, useEffect } from 'preact/hooks';
+import { useRef, useEffect, useState } from 'preact/hooks';
 
 export function TrainingVisualizer({ history, currentStepIndex, isTraining, paramsConfig }) {
   const canvasRef = useRef(null);
+  const [page, setPage] = useState(0);
+  const itemsPerPage = 6;
+
+  // Reset page when config changes (e.g. switching stats)
+  useEffect(() => {
+    setPage(0);
+  }, [paramsConfig]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,32 +48,35 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
     let charts = [];
 
     if (paramsConfig) {
-      // Generic Mode: One chart per parameter
+      // Pagination Logic
+      const startIdx = page * itemsPerPage;
+      const endIdx = Math.min(startIdx + itemsPerPage, paramsConfig.length);
+      const visibleParams = paramsConfig.slice(startIdx, endIdx);
+
       // Determine Grid Layout
-      // Example: 5 params -> 3 cols, 2 rows.
-      const count = paramsConfig.length;
-      const cols = count >= 4 ? 3 : count;
-      const rows = Math.ceil(count / cols);
+      const count = visibleParams.length;
+      const cols = 3;
+      const rows = 2; // Fixed 3x2 grid for max 6
 
       const chartW = width / cols;
       const chartH = height / rows;
 
-      charts = paramsConfig.map((cfg, idx) => {
+      charts = visibleParams.map((cfg, relIdx) => {
+        const globalIdx = startIdx + relIdx;
+
         // Calculate ranges for this param
-        // Note: History params might go slightly outside config.min/max due to floats or logic, 
-        // but usually stick to it. safer to measure history.
-        const values = history.map(h => h.params[idx]);
+        const values = history.map(h => h.params[globalIdx]);
         const pMin = Math.min(...values);
         const pMax = Math.max(...values);
 
-        const col = idx % cols;
-        const row = Math.floor(idx / cols);
+        const col = relIdx % cols;
+        const row = Math.floor(relIdx / cols);
 
         return {
           xLabel: cfg.name,
           xMin: pMin,
           xMax: pMax,
-          getValue: (h, i) => h.params[idx],
+          getValue: (h, i) => h.params[globalIdx],
           offsetX: col * chartW,
           offsetY: row * chartH,
           w: chartW,
@@ -134,7 +144,12 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       ctx.fillStyle = '#333';
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(xLabel, offsetX + w / 2, offsetY + h - 10);
+
+      // Truncate overly long labels
+      let label = xLabel;
+      if (label.length > 20) label = label.substring(0, 18) + '...';
+
+      ctx.fillText(label, offsetX + w / 2, offsetY + h - 10);
 
       // Y-Axis Title (Error) - only on leftmost charts
       if (offsetX === 0) {
@@ -152,7 +167,7 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       ctx.fillText(xMin.toFixed(1), offsetX + padding, offsetY + h - padding + 12);
       ctx.fillText(xMax.toFixed(1), offsetX + w - padding, offsetY + h - padding + 12);
 
-      // Plot Points (Scattered cloud of all past evaluations)
+      // Plot Points
       ctx.fillStyle = 'rgba(52, 152, 219, 0.4)'; // Blue transparent
       for (let i = 0; i <= limit; i++) {
         const val = getValue(history[i], i);
@@ -176,7 +191,6 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       }
 
       // Highlight Current Scanner Position (Red)
-      // Only show this WHILE training. Once done, it's distracting/irrelevant.
       if (isTraining && currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex <= limit) {
         const curVal = getValue(history[currentStepIndex], currentStepIndex);
         const cx = mapX(curVal);
@@ -226,17 +240,31 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       ctx.fillText(`Min Error: ${minErr.toFixed(5)}`, width - 10, height - 10);
     }
 
+  }, [history, currentStepIndex, isTraining, paramsConfig, page]);
 
-  }, [history, currentStepIndex, isTraining, paramsConfig]);
+  const totalPages = paramsConfig ? Math.ceil(paramsConfig.length / itemsPerPage) : 1;
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
       <canvas
         ref={canvasRef}
         width={800}
-        height={400} // Increased height to accommodate rows
+        height={400}
         style={{ width: '100%', height: 'auto' }}
       />
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px', gap: '10px' }}>
+          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+            Previous
+          </button>
+          <span style={{ alignSelf: 'center' }}>
+            Page {page + 1} of {totalPages}
+          </span>
+          <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

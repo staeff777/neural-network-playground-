@@ -160,8 +160,9 @@ export function App() {
         // Optional: Live update of the model to the "Best So Far"
         // This is cool because the user sees the model getting better in the "Neural Network" view instantly
         if (bestSoFar && bestSoFar.bestParams) {
-          // Generic
-          if (neuralNet.current.setWeights) {
+          if (neuralNet.current.setParams) {
+            neuralNet.current.setParams(bestSoFar.bestParams);
+          } else if (neuralNet.current.setWeights) {
             const { weights, bias } = bestSoFar.bestParams;
             neuralNet.current.setWeights(weights);
             neuralNet.current.setBias(bias);
@@ -257,7 +258,8 @@ export function App() {
         <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
           <a href="?sim=physics" style={{ marginRight: '10px', fontWeight: simConfig.id === 'physics' ? 'bold' : 'normal' }}>Phase 1 (Physik)</a>
           <a href="?sim=spam" style={{ marginRight: '10px', fontWeight: simConfig.id === 'spam' ? 'bold' : 'normal' }}>Phase 2 (Spam)</a>
-          <a href="?sim=spam_advanced" style={{ fontWeight: simConfig.id === 'spam_advanced' ? 'bold' : 'normal' }}>Phase 3 (Spam Extended)</a>
+          <a href="?sim=spam_advanced" style={{ marginRight: '10px', fontWeight: simConfig.id === 'spam_advanced' ? 'bold' : 'normal' }}>Phase 3 (Spam Extended)</a>
+          <a href="?sim=spam_hidden" style={{ fontWeight: simConfig.id === 'spam_hidden' ? 'bold' : 'normal' }}>Phase 4 (Deep)</a>
         </div>
       </header>
 
@@ -419,6 +421,7 @@ export function App() {
               weight={neuralNet.current ? (neuralNet.current.weights || neuralNet.current.weight) : 0}
               bias={neuralNet.current ? neuralNet.current.bias : 0}
               output={neuralNet.current ? neuralNet.current.predict(currentInput) : 0}
+              model={neuralNet.current}
               formula={vizProps.formula}
               inputLabel={vizProps.inputLabels || vizProps.inputLabel}
               outputLabel={vizProps.outputLabel}
