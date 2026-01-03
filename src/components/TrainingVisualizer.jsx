@@ -75,29 +75,38 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         const offsetY = row * chartH;
 
         if (i === 0) {
-          // --- PLOT 0: ERROR OVER STEP ---
-          // X: Step Index (0..history.length-1)
-          // Y: Error
+          // --- PLOT 0: ACCURACY OVER STEP ---
           const xMax = Math.max(10, history.length - 1);
+          charts.push({
+            type: 'accuracy_step',
+            xLabel: 'Training Step',
+            xMin: 0,
+            xMax: xMax,
+            yMode: 'accuracy',
+            getValue: (h, idx) => idx,
+            getYValue: (h) => h.accuracy || 0,
+            offsetX, offsetY, w: chartW, h: chartH
+          });
 
+        } else if (i === 1) {
+          // --- PLOT 1: ERROR OVER STEP ---
+          const xMax = Math.max(10, history.length - 1);
           charts.push({
             type: 'error_step',
             xLabel: 'Training Step',
             xMin: 0,
             xMax: xMax,
-            getValue: (h, idx) => idx, // The "value" for X-axis is the index itself
-            offsetX,
-            offsetY,
-            w: chartW,
-            h: chartH
+            yMode: 'error_log',
+            getValue: (h, idx) => idx,
+            getYValue: (h) => h.error,
+            offsetX, offsetY, w: chartW, h: chartH
           });
 
         } else {
-          // --- PLOT 1..N: PARAM OVER ERROR ---
-          const paramIdx = i - 1; // Shift back to get param index
+          // --- PLOT 2..N: PARAM OVER ERROR ---
+          const paramIdx = i - 2; // Shift indices back
           const cfg = paramsConfig[paramIdx];
 
-          // Calculate ranges for this param
           const values = history.map(h => h.params[paramIdx]);
           const pMin = Math.min(...values);
           const pMax = Math.max(...values);
@@ -107,21 +116,20 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
             xLabel: cfg.name,
             xMin: pMin,
             xMax: pMax,
+            yMode: 'error_log',
             getValue: (h) => h.params[paramIdx],
-            offsetX,
-            offsetY,
-            w: chartW,
-            h: chartH
+            getYValue: (h) => h.error,
+            offsetX, offsetY, w: chartW, h: chartH
           });
         }
       }
 
     } else {
       // Legacy Mode (Phase 1 & 2)
-      // Charts: Error vs Step, Weight vs Error, Bias vs Error
-      // Layout: 3 columns, 1 row (Full Height)
-      const chartW = width / 3;
-      const chartH = height; // Single row, full height matches previous style better than small grids
+      // Charts: Accuracy vs Step, Error vs Step, Weight vs Error, Bias vs Error
+      // 2x2 Layout
+      const chartW = width / 2;
+      const chartH = height / 2;
 
       const valuesW = history.map(h => h.weight);
       const valuesB = history.map(h => h.bias);
@@ -129,35 +137,24 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
       charts = [
         {
-          type: 'error_step',
-          xLabel: 'Training Step',
-          xMin: 0,
-          xMax: xMaxStep,
-          getValue: (h, idx) => idx,
-          offsetX: 0,
-          offsetY: 0,
-          w: chartW,
-          h: chartH
+          type: 'accuracy_step', xLabel: 'Accuracy', xMin: 0, xMax: xMaxStep,
+          yMode: 'accuracy', getValue: (h, idx) => idx, getYValue: (h) => h.accuracy || 0,
+          offsetX: 0, offsetY: 0, w: chartW, h: chartH
         },
         {
-          xLabel: 'Weight',
-          xMin: Math.min(...valuesW),
-          xMax: Math.max(...valuesW),
-          getValue: (h) => h.weight,
-          offsetX: chartW,
-          offsetY: 0,
-          w: chartW,
-          h: chartH
+          type: 'error_step', xLabel: 'Step', xMin: 0, xMax: xMaxStep,
+          yMode: 'error_log', getValue: (h, idx) => idx, getYValue: (h) => h.error,
+          offsetX: chartW, offsetY: 0, w: chartW, h: chartH
         },
         {
-          xLabel: 'Bias',
-          xMin: Math.min(...valuesB),
-          xMax: Math.max(...valuesB),
-          getValue: (h) => h.bias,
-          offsetX: 2 * chartW,
-          offsetY: 0,
-          w: chartW,
-          h: chartH
+          xLabel: 'Weight', xMin: Math.min(...valuesW), xMax: Math.max(...valuesW),
+          yMode: 'error_log', getValue: (h) => h.weight, getYValue: (h) => h.error,
+          offsetX: 0, offsetY: chartH, w: chartW, h: chartH
+        },
+        {
+          xLabel: 'Bias', xMin: Math.min(...valuesB), xMax: Math.max(...valuesB),
+          yMode: 'error_log', getValue: (h) => h.bias, getYValue: (h) => h.error,
+          offsetX: chartW, offsetY: chartH, w: chartW, h: chartH
         }
       ];
     }
@@ -166,12 +163,26 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
     const padding = 35;
 
     charts.forEach(chart => {
-      const { xLabel, xMin, xMax, getValue, offsetX, offsetY, w, h } = chart;
-
-      // Mappers
-      // Map Y (Error) fits within the chart height
-      const mapY = (e) => offsetY + h - padding - (e / (maxError || 1)) * (h - 2 * padding);
+      const { xLabel, xMin, xMax, getValue, getYValue, offsetX, offsetY, w, h, yMode } = chart;
       const mapX = (v) => offsetX + padding + (v - xMin) / ((xMax - xMin) || 1) * (w - 2 * padding);
+
+      // Define MapY based on Mode
+      let mapY;
+
+      if (yMode === 'accuracy') {
+        // Linear 0 to 1
+        mapY = (acc) => offsetY + h - padding - (acc) * (h - 2 * padding);
+      } else {
+        // Error (Linear) - undoing log scale
+        // minError is 0 for visual simplicity or true min
+        const yMin = 0;
+        const yMax = maxError || 1;
+
+        mapY = (e) => {
+          const norm = (e - yMin) / (yMax - yMin);
+          return offsetY + h - padding - norm * (h - 2 * padding);
+        };
+      }
 
       // Chart Area Box
       ctx.strokeStyle = '#eee';
@@ -199,36 +210,80 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
       ctx.fillText(label, offsetX + w / 2, offsetY + h - 10);
 
-      // Y-Axis Title (Error) - only on leftmost charts
-      if (offsetX === 0) {
-        ctx.save();
-        ctx.translate(offsetX + 10, offsetY + h / 2);
-        ctx.rotate(-Math.PI / 2);
+      // --- Y-AXIS TICKS & TITLE ---
+      ctx.save();
+      ctx.translate(offsetX + 10, offsetY + h / 2);
+      ctx.rotate(-Math.PI / 2);
+
+      if (yMode === 'accuracy') {
+        ctx.fillText("Accuracy", 0, 0);
+        ctx.restore();
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#666';
+        ctx.font = '9px sans-serif';
+
+        // 0, 0.5, 1.0 ticks
+        [0, 0.25, 0.5, 0.75, 1.0].forEach(v => {
+          const y = mapY(v);
+          ctx.fillText(v.toFixed(2), offsetX + padding - 5, y + 3);
+          // Grid
+          ctx.beginPath();
+          ctx.strokeStyle = '#f0f0f0';
+          ctx.moveTo(offsetX + padding, y);
+          ctx.lineTo(offsetX + w - padding, y);
+          ctx.stroke();
+        });
+      } else {
+        // Error (Linear)
         ctx.fillText("Error", 0, 0);
         ctx.restore();
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#666';
+        ctx.font = '9px sans-serif';
+
+        // 5 Linear ticks
+        const steps = 5;
+        for (let i = 0; i <= steps; i++) {
+          const val = (i / steps) * maxError;
+          const y = mapY(val);
+
+          ctx.fillText(val.toFixed(2), offsetX + padding - 5, y + 3);
+
+          if (i > 0) { // Don't draw bottom line over axis
+            ctx.beginPath();
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.moveTo(offsetX + padding, y);
+            ctx.lineTo(offsetX + w - padding, y);
+            ctx.stroke();
+          }
+        }
       }
 
-      // Ticks - simplified
+      // X Ticks
       ctx.fillStyle = '#666';
       ctx.font = '9px sans-serif';
-      // X Min/Max
+      ctx.textAlign = 'center';
       ctx.fillText(xMin.toFixed(1), offsetX + padding, offsetY + h - padding + 12);
       ctx.fillText(xMax.toFixed(1), offsetX + w - padding, offsetY + h - padding + 12);
 
       // Plot Points
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.4)'; // Blue transparent
+      ctx.fillStyle = yMode === 'accuracy' ? 'rgba(155, 89, 182, 0.4)' : 'rgba(52, 152, 219, 0.4)'; // Purple for Acc, Blue for Error
       for (let i = 0; i <= limit; i++) {
         const val = getValue(history[i], i);
+        const yVal = getYValue(history[i]);
         const x = mapX(val);
-        const y = mapY(history[i].error);
+        const y = mapY(yVal);
         ctx.fillRect(x, y, 2, 2);
       }
 
-      // Highlight Best So Far (Green)
+      // Highlight Best
       if (bestIdx >= 0) {
         const bestVal = getValue(history[bestIdx], bestIdx);
+        const yVal = getYValue(history[bestIdx]);
         const bx = mapX(bestVal);
-        const by = mapY(history[bestIdx].error);
+        const by = mapY(yVal);
 
         ctx.beginPath();
         ctx.fillStyle = '#2ecc71'; // Green
@@ -238,11 +293,12 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         ctx.stroke();
       }
 
-      // Highlight Current Scanner Position (Red)
+      // Highlight Current
       if (isTraining && currentStepIndex !== null && currentStepIndex >= 0 && currentStepIndex <= limit) {
         const curVal = getValue(history[currentStepIndex], currentStepIndex);
+        const yVal = getYValue(history[currentStepIndex]);
         const cx = mapX(curVal);
-        const cy = mapY(history[currentStepIndex].error);
+        const cy = mapY(yVal);
 
         ctx.beginPath();
         ctx.fillStyle = '#e74c3c'; // Red
