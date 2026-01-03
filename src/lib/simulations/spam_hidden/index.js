@@ -1,9 +1,9 @@
 import { SpamAdvancedTruth } from '../spam_advanced/ground_truth';
 import { HiddenLayerModel } from './model';
 import { SpamAdvancedCanvas } from '../../../components/simulations/SpamAdvancedCanvas';
-import { config as advancedConfig } from '../spam_advanced/index';
+import { generateNonlinearData, FEATURES } from '../spam_nonlinear/index';
 
-// Generate params for 4 inputs -> 10 hidden -> 1 output
+// Generate params for 2 inputs -> 10 hidden -> 1 output
 const generateParamsConfig = () => {
     const params = [];
 
@@ -12,8 +12,8 @@ const generateParamsConfig = () => {
         // Bias
         params.push({ name: `b1_${j}`, min: -3, max: 3, step: 1.0 });
 
-        // Weights (4 inputs)
-        for (let i = 0; i < 4; i++) {
+        // Weights (2 inputs)
+        for (let i = 0; i < 2; i++) {
             params.push({ name: `w1_${j}_${i}`, min: -3, max: 3, step: 1.0 });
         }
     }
@@ -32,35 +32,41 @@ const generateParamsConfig = () => {
 
 export const config = {
     id: 'spam_hidden',
-    title: 'Phase 4: Deep Learning (Hidden Layer)',
-    description: 'Spam-Erkennung mit einem Hidden Layer (10 Neuronen). Komplexere Muster können erkannt werden.',
+    title: 'Phase 5: Deep Learning (Hidden Layer)',
+    description: 'Spam-Erkennung mit einem Hidden Layer (10 Neuronen). Das Deep Neural Network kann die nicht-lineare Verteilung ("Spam-Insel") erkennen.',
     Model: HiddenLayerModel,
     GroundTruth: SpamAdvancedTruth,
     CanvasComponent: SpamAdvancedCanvas,
 
     // Default starting parameters
-    // We can't easily list 60 params here, but the model init handles 0s.
-    defaultParams: {
-        // We can rely on Model defaults (random or zero)
-        // Or we could try to load a pre-trained set if we had one.
+    defaultParams: {},
+
+    // Reuse data generation from Phase 4
+    // We provide a dummy input for the "Simulation" tab live view if needed
+    getInput: (time) => {
+        return {
+            input: [50, 0],
+            text: "Live Input"
+        };
     },
 
-    // Reuse data generation from Phase 3
-    getInput: advancedConfig.getInput,
-    examples: advancedConfig.examples,
-    generateData: advancedConfig.generateData,
+    generateData: (groundTruth) => {
+        return generateNonlinearData();
+    },
 
-    // Training Config
     trainingConfig: {
         params: generateParamsConfig()
     },
 
     networkViz: {
         formula: 'Deep Network',
-        inputLabels: ["Spam-Worte", "Großbuchst.", "Links", "Gesamtworte"],
+        inputLabels: ["Worte", "Links"],
         outputLabel: "Spam?",
         biasLabel: "b"
     },
+
+    // Custom features for Canvas
+    featuresConfig: FEATURES,
 
     isFinished: (time) => time >= 50
 };

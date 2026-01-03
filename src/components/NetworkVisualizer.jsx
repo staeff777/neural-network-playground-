@@ -14,7 +14,11 @@ export function NetworkVisualizer({
 }) {
   if (model && model.getTopology) {
     // Normalize inputs
-    const inputs = Array.isArray(input) ? input : [input];
+    let rawInput = input;
+    if (input && !Array.isArray(input) && typeof input === 'object' && input.input && Array.isArray(input.input)) {
+      rawInput = input.input;
+    }
+    const inputs = Array.isArray(rawInput) ? rawInput : [rawInput];
     const inpLabels = Array.isArray(inputLabel) ? inputLabel : [inputLabel];
 
     return <LayeredNetworkVisualizer
@@ -27,7 +31,12 @@ export function NetworkVisualizer({
   }
 
   // Normalize inputs to arrays
-  const inputs = Array.isArray(input) ? input : [input];
+  // Normalize inputs to arrays
+  let rawInput = input;
+  if (input && !Array.isArray(input) && typeof input === 'object' && input.input && Array.isArray(input.input)) {
+    rawInput = input.input;
+  }
+  const inputs = Array.isArray(rawInput) ? rawInput : [rawInput];
   const weights = Array.isArray(weight) ? weight : [weight];
   const inputLabels = Array.isArray(inputLabel) ? inputLabel : [inputLabel];
 

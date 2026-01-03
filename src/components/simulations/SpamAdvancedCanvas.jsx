@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'preact/hooks';
 import { getNiceTicks } from '../../utils/graphUtils';
 
-const FEATURES = [
+export const DEFAULT_FEATURES = [
     { label: "Spam Words", idx: 0, max: 15 },
     { label: "Großbuchstaben", idx: 1, max: 25 },
     { label: "Links", idx: 2, max: 8 },
@@ -16,7 +16,8 @@ export function SpamAdvancedCanvas({
     allowedModes = ['features', 'scatter', '3d', 'text'],
     hideControls = false,
     showModel = true,
-    additionalControls = null
+    additionalControls = null,
+    features = DEFAULT_FEATURES
 }) {
     const canvasRef = useRef(null);
     const [viewMode, setViewMode] = useState(allowedModes[0]);
@@ -163,9 +164,9 @@ export function SpamAdvancedCanvas({
         drawnPoints.current = []; // Reset hitboxes
 
         const getDataMax = (idx) => {
-            if (!data || data.length === 0) return FEATURES[idx].max;
+            if (!data || data.length === 0) return features[idx].max;
             const max = Math.max(...data.map(d => d.input[idx]));
-            return max > 0 ? max : FEATURES[idx].max;
+            return max > 0 ? max : features[idx].max;
         };
 
         // --- 3D PLOT MODE ---
@@ -218,11 +219,11 @@ export function SpamAdvancedCanvas({
 
             ctx.font = 'bold 11px sans-serif';
             ctx.fillStyle = colX;
-            ctx.fillText("X: " + FEATURES[xAxis].label, projCorners[1].x, projCorners[1].y);
+            ctx.fillText("X: " + features[xAxis].label, projCorners[1].x, projCorners[1].y);
             ctx.fillStyle = colY;
-            ctx.fillText("Y: " + FEATURES[yAxis].label, projCorners[3].x, projCorners[3].y);
+            ctx.fillText("Y: " + features[yAxis].label, projCorners[3].x, projCorners[3].y);
             ctx.fillStyle = colZ;
-            ctx.fillText("Z: " + FEATURES[zAxis].label, projCorners[4].x, projCorners[4].y);
+            ctx.fillText("Z: " + features[zAxis].label, projCorners[4].x, projCorners[4].y);
 
             const pointsToDraw = [];
             const norm = (val, max) => (val / max) * 2 - 1;
@@ -309,11 +310,11 @@ export function SpamAdvancedCanvas({
                             text: p.pt.text,
                             isSpam: p.pt.target === 1,
                             features: {
-                                xLabel: FEATURES[xAxis].label,
+                                xLabel: features[xAxis].label,
                                 xVal: p.pt.input[xAxis],
-                                yLabel: FEATURES[yAxis].label,
+                                yLabel: features[yAxis].label,
                                 yVal: p.pt.input[yAxis],
-                                zLabel: FEATURES[zAxis].label,
+                                zLabel: features[zAxis].label,
                                 zVal: p.pt.input[zAxis]
                             }
                         }
@@ -423,13 +424,13 @@ export function SpamAdvancedCanvas({
             ctx.font = 'bold 12px sans-serif';
 
             ctx.fillStyle = colX;
-            ctx.fillText(`${FEATURES[xAxis].label}`, padding + plotW / 2, originY + 30);
+            ctx.fillText(`${features[xAxis].label}`, padding + plotW / 2, originY + 30);
 
             ctx.save();
             ctx.translate(15, originY - plotH / 2);
             ctx.rotate(-Math.PI / 2);
             ctx.fillStyle = colY;
-            ctx.fillText(`${FEATURES[yAxis].label}`, 0, 0);
+            ctx.fillText(`${features[yAxis].label}`, 0, 0);
             ctx.restore();
 
             // --- DATA CLIPPING START ---
@@ -476,9 +477,9 @@ export function SpamAdvancedCanvas({
                             text: pt.text,
                             isSpam: pt.target === 1,
                             features: {
-                                xLabel: FEATURES[xAxis].label,
+                                xLabel: features[xAxis].label,
                                 xVal: pt.input[xAxis],
-                                yLabel: FEATURES[yAxis].label,
+                                yLabel: features[yAxis].label,
                                 yVal: pt.input[yAxis]
                             }
                         }
@@ -613,10 +614,10 @@ export function SpamAdvancedCanvas({
             const h = (height - 3 * pad) / 2;
 
             const plots = [
-                { x: pad, y: pad, ...FEATURES[0] },
-                { x: pad + w + pad, y: pad, ...FEATURES[1] },
-                { x: pad, y: pad + h + pad, ...FEATURES[2] },
-                { x: pad + w + pad, y: pad + h + pad, ...FEATURES[3] }
+                { x: pad, y: pad, ...features[0] },
+                { x: pad + w + pad, y: pad, ...features[1] },
+                { x: pad, y: pad + h + pad, ...features[2] },
+                { x: pad + w + pad, y: pad + h + pad, ...features[3] }
             ];
 
             plots.forEach(plot => {
@@ -772,11 +773,11 @@ export function SpamAdvancedCanvas({
                             <>
                                 <span>X:</span>
                                 <select value={xAxis} onChange={e => setXAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
-                                    {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
+                                    {features.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
                                 </select>
                                 <span>Y:</span>
                                 <select value={yAxis} onChange={e => setYAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
-                                    {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
+                                    {features.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
                                 </select>
                             </>
                         )}
@@ -785,7 +786,7 @@ export function SpamAdvancedCanvas({
                             <>
                                 <span>Z:</span>
                                 <select value={zAxis} onChange={e => setZAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
-                                    {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
+                                    {features.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
                                 </select>
                             </>
                         )}

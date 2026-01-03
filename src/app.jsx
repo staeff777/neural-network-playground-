@@ -260,7 +260,8 @@ export function App() {
           <a href="?sim=physics" style={{ marginRight: '10px', fontWeight: simConfig.id === 'physics' ? 'bold' : 'normal' }}>Phase 1 (Physik)</a>
           <a href="?sim=spam" style={{ marginRight: '10px', fontWeight: simConfig.id === 'spam' ? 'bold' : 'normal' }}>Phase 2 (Spam)</a>
           <a href="?sim=spam_advanced" style={{ marginRight: '10px', fontWeight: simConfig.id === 'spam_advanced' ? 'bold' : 'normal' }}>Phase 3 (Spam Extended)</a>
-          <a href="?sim=spam_hidden" style={{ fontWeight: simConfig.id === 'spam_hidden' ? 'bold' : 'normal' }}>Phase 4 (Deep)</a>
+          <a href="?sim=spam_nonlinear" style={{ marginRight: '10px', fontWeight: simConfig.id === 'spam_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear)</a>
+          <a href="?sim=spam_hidden" style={{ fontWeight: simConfig.id === 'spam_hidden' ? 'bold' : 'normal' }}>Phase 5 (Deep)</a>
         </div>
       </header>
 
@@ -308,9 +309,13 @@ export function App() {
 
                       // Props for Phase 3/4 to only show text
                       const extraProps = {};
-                      if (['spam_advanced', 'spam_hidden'].includes(simConfig.id)) {
+                      if (['spam_advanced', 'spam_hidden', 'spam_nonlinear'].includes(simConfig.id)) {
                         extraProps.allowedModes = ['text'];
                         extraProps.hideControls = true;
+                      }
+
+                      if (simConfig.featuresConfig) {
+                        extraProps.features = simConfig.featuresConfig;
                       }
 
                       return (
@@ -375,7 +380,7 @@ export function App() {
                       </div>
                     );
 
-                    const isAdvanced = ['spam_advanced', 'spam_hidden'].includes(simConfig.id);
+                    const isAdvanced = ['spam_advanced', 'spam_hidden', 'spam_nonlinear'].includes(simConfig.id);
 
                     return (
                       <>
@@ -410,6 +415,10 @@ export function App() {
                                   extraProps.staticMode = true;
                                   extraProps.showGroundTruth = true; // Always show GT
                                   extraProps.showModel = trainingHistory.length > 0; // Show model only after training
+                                }
+
+                                if (simConfig.featuresConfig) {
+                                  extraProps.features = simConfig.featuresConfig;
                                 }
 
                                 return (

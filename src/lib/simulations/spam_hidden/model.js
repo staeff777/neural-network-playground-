@@ -1,5 +1,5 @@
 export class HiddenLayerModel {
-    constructor(inputCount = 4, hiddenCount = 10) {
+    constructor(inputCount = 2, hiddenCount = 10) {
         this.inputCount = inputCount;
         this.hiddenCount = hiddenCount;
 
