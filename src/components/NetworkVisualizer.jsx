@@ -76,10 +76,20 @@ export function NetworkVisualizer({
   // Sum Point is to the left of Activation.
   const sumPointX = activationX - 60;
 
+  // Unique ID for accessibility
+  const titleId = `net-viz-title-${Math.floor(Math.random() * 10000)}`;
+
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff', textAlign: 'center' }}>
       <h3 style={{ marginBottom: '10px' }}>Modell Architektur</h3>
-      <svg width={svgWidth} height={svgHeight} style={{ overflow: 'visible' }}>
+      <svg
+        width={svgWidth}
+        height={svgHeight}
+        style={{ overflow: 'visible' }}
+        aria-labelledby={titleId}
+        role="img"
+      >
+        <title id={titleId}>Visualisierung des neuronalen Netzwerks: {formula}</title>
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="27" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
@@ -204,9 +214,3 @@ export function NetworkVisualizer({
     </div>
   );
 }
-
-// Helper to access simConfig safely if needed, but props should suffice.
-// Actually `simConfig` isn't in scope here. I used it for `toFixed`.
-// I'll just use a safe default or pass a prop if needed. 
-// For now, toFixed(1) for generic inputs is fine.
-
