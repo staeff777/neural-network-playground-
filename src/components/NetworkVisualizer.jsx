@@ -77,7 +77,7 @@ export function NetworkVisualizer({
   const sumPointX = activationX - 60;
 
   return (
-    <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff', textAlign: 'center' }}>
+    <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <h3 style={{ marginBottom: '10px' }}>Modell Architektur</h3>
       <svg width={svgWidth} height={svgHeight} style={{ overflow: 'visible' }}>
         <defs>

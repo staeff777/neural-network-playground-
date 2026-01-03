@@ -324,7 +324,7 @@ export class ExhaustiveTrainer {
     const MAX_STEPS = 10000;
     const INITIAL_RADIUS_FACTOR = 0.5; // Start with searching 50% of the space
     const DECAY = 0.992; // cay radius per step
-
+    const PHASE_1_RATIO = 0.1;
     let minError = Infinity;
     let bestParams = {};
 
@@ -403,7 +403,7 @@ export class ExhaustiveTrainer {
 
     for (let step = 0; step < MAX_STEPS; step++) {
       // Two-Stage Logic
-      const PHASE_1_RATIO = 0.9;
+
       const isPhase1 = step < MAX_STEPS * PHASE_1_RATIO;
 
       // Temperature & Radius
@@ -436,6 +436,7 @@ export class ExhaustiveTrainer {
 
           mutated = true;
           const range = dynamicRanges[idx];
+
           let didExtend = false;
 
           // --- Phase 1 Only: Dynamic Boundary Extension ---
@@ -443,12 +444,12 @@ export class ExhaustiveTrainer {
             const threshold = range.span * 0.15;
 
             if (val < range.min + threshold) {
-              range.min -= range.span * 0.8;
-              range.span = range.max - range.min;
+              range.min -= range.span * 0.01;
+              //range.span = range.max - range.min;
               didExtend = true;
             }
             if (val > range.max - threshold) {
-              range.max += range.span * 0.8;
+              range.max += range.span * 0.01;
               range.span = range.max - range.min;
               didExtend = true;
             }
@@ -488,7 +489,7 @@ export class ExhaustiveTrainer {
       } else {
         // Accept with probability even if worse
         const prob = Math.exp(-diff / (T + 1e-9));
-        if (Math.random() < prob) accept = true;
+        //if (Math.random() < prob) accept = true;
       }
 
       if (accept) {
