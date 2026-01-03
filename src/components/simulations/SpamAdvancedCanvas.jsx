@@ -7,9 +7,26 @@ const FEATURES = [
     { label: "Gesamtworte", idx: 3, max: 100 }
 ];
 
-export function SpamAdvancedCanvas({ data, currentInput, currentPrediction, neuralNet }) {
+export function SpamAdvancedCanvas({
+    data,
+    currentInput,
+    currentPrediction,
+    neuralNet,
+    allowedModes = ['features', 'scatter', '3d', 'text'],
+    hideControls = false,
+    showModel = true,
+    additionalControls = null
+}) {
     const canvasRef = useRef(null);
-    const [viewMode, setViewMode] = useState('scatter'); // 'features', 'scatter', '3d'
+    // Initialize viewMode to the first allowed mode
+    const [viewMode, setViewMode] = useState(allowedModes[0]);
+
+    // Sync viewMode if allowedModes changes and current is invalid
+    useEffect(() => {
+        if (!allowedModes.includes(viewMode)) {
+            setViewMode(allowedModes[0]);
+        }
+    }, [allowedModes]);
 
     // Axes Selection
     const [xAxis, setXAxis] = useState(0); // Default: Spam Words
@@ -195,7 +212,7 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction, neur
             const norm = (val, max) => (val / max) * 2 - 1;
 
             // --- DRAW DECISION PLANE (3D) ---
-            if (neuralNet && neuralNet.weights) {
+            if (showModel && neuralNet && neuralNet.weights) {
                 const wX = neuralNet.weights[xAxis] || 0;
                 const wY = neuralNet.weights[yAxis] || 0;
                 const wZ = neuralNet.weights[zAxis] || 0;
@@ -347,7 +364,7 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction, neur
 
             // --- DRAW DECISION LINE (2D) ---
             // Equation: wX*x + wY*y + b = 0  => y = (-wX*x - b) / wY
-            if (neuralNet) {
+            if (showModel && neuralNet) {
                 let weights = neuralNet.weights;
                 const bias = neuralNet.bias || 0;
 
@@ -581,41 +598,58 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction, neur
             }
         });
 
-    }, [data, currentInput, currentPrediction, viewMode, xAxis, yAxis, zAxis, rotation]);
+    }, [data, currentInput, currentPrediction, neuralNet, viewMode, xAxis, yAxis, zAxis, rotation, showModel]);
+
+    // VIEW MODE LABELS MAPPING
+    const viewLabels = {
+        'features': 'Alle Features',
+        'scatter': '2D Plot',
+        '3d': '3D Plot',
+        'text': 'Text Mode'
+    };
 
     return (
         <div style={{ textAlign: 'center' }}>
             {/* View Selector & Axis Controls */}
-            <div style={{ marginBottom: '10px', display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap', fontSize: '0.9rem' }}>
-                <select value={viewMode} onChange={e => setViewMode(e.target.value)} style={{ padding: '4px' }}>
-                    <option value="features">Alle Features</option>
-                    <option value="scatter">2D Plot</option>
-                    <option value="3d">3D Plot</option>
-                    <option value="text">Text Mode</option>
-                </select>
+            {!hideControls && (
+                <div style={{ marginBottom: '10px', display: 'flex', gap: '5px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.9rem' }}>
+                    {/* Left: Additional Controls (e.g. Data Tab Toggle) */}
+                    <div>
+                        {additionalControls}
+                    </div>
 
-                {(viewMode === 'scatter' || viewMode === '3d') && (
-                    <>
-                        <span>X:</span>
-                        <select value={xAxis} onChange={e => setXAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
-                            {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
+                    {/* Right: Plot Controls */}
+                    <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                        <select value={viewMode} onChange={e => setViewMode(e.target.value)} style={{ padding: '4px' }}>
+                            {allowedModes.map(mode => (
+                                <option key={mode} value={mode}>{viewLabels[mode]}</option>
+                            ))}
                         </select>
-                        <span>Y:</span>
-                        <select value={yAxis} onChange={e => setYAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
-                            {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
-                        </select>
-                    </>
-                )}
 
-                {viewMode === '3d' && (
-                    <>
-                        <span>Z:</span>
-                        <select value={zAxis} onChange={e => setZAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
-                            {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
-                        </select>
-                    </>
-                )}
-            </div>
+                        {(viewMode === 'scatter' || viewMode === '3d') && (
+                            <>
+                                <span>X:</span>
+                                <select value={xAxis} onChange={e => setXAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
+                                    {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
+                                </select>
+                                <span>Y:</span>
+                                <select value={yAxis} onChange={e => setYAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
+                                    {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
+                                </select>
+                            </>
+                        )}
+
+                        {viewMode === '3d' && (
+                            <>
+                                <span>Z:</span>
+                                <select value={zAxis} onChange={e => setZAxis(parseInt(e.target.value))} style={{ padding: '4px' }}>
+                                    {FEATURES.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
+                                </select>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <canvas
                 ref={canvasRef}
@@ -629,9 +663,11 @@ export function SpamAdvancedCanvas({ data, currentInput, currentPrediction, neur
                 onMouseOut={handleMouseOut}
             />
 
-            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
-                {viewMode === '3d' ? 'Drag to rotate 3D view' : 'Wähle Achsen für die Visualisierung'}
-            </div>
+            {!hideControls && (
+                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+                    {viewMode === '3d' ? 'Drag to rotate 3D view' : 'Wähle Achsen für die Visualisierung'}
+                </div>
+            )}
         </div>
     );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'preact/hooks';
 import { ExhaustiveTrainer } from './lib/trainer';
 import { TrainingVisualizer } from './components/TrainingVisualizer';
 import { NetworkVisualizer } from './components/NetworkVisualizer';
+import { PositionTimeGraph } from './components/simulations/PositionTimeGraph';
 import { ControlPanel } from './components/ControlPanel';
 import { ArchitectureGallery } from './components/debug/ArchitectureGallery';
 import { getSimulationConfig } from './lib/simulations/registry';
@@ -23,6 +24,7 @@ export function App() {
   const [trainingStepIndex, setTrainingStepIndex] = useState(-1);
   const [isTraining, setIsTraining] = useState(false);
   const [activeTab, setActiveTab] = useState('simulation');
+  const [dataViewMode, setDataViewMode] = useState('table'); // 'plot' or 'table'
   const [trainerType, setTrainerType] = useState('exhaustive');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
 
@@ -278,7 +280,7 @@ export function App() {
                   className={`tab-button ${activeTab === 'data' ? 'active' : ''}`}
                   onClick={() => setActiveTab('data')}
                 >
-                  Trainingsdaten
+                  Daten
                 </button>
                 <button
                   className={`tab-button ${activeTab === 'training' ? 'active' : ''}`}
@@ -290,26 +292,41 @@ export function App() {
 
               {activeTab === 'simulation' && (
                 <>
-                  {/* Pass current prediction to canvas so it can visualize it */}
-                  {(() => {
-                    let pred = 0;
-                    try {
-                      if (neuralNet.current) {
-                        pred = neuralNet.current.predict(currentInput);
-                      }
-                    } catch (e) { console.error("Predict Error", e); }
+                  {/* Phase 2: Empty as requested */}
+                  {simConfig.id === 'spam' ? (
+                    <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', border: '2px dashed #ddd', borderRadius: '8px' }}>
+                      <p style={{ color: '#999' }}>Daten-Visualisierung jetzt im "Daten" Tab</p>
+                    </div>
+                  ) : (
+                    /* Phase 1 or 3/4 */
+                    (() => {
+                      let pred = 0;
+                      try {
+                        if (neuralNet.current) {
+                          pred = neuralNet.current.predict(currentInput);
+                        }
+                      } catch (e) { console.error("Predict Error", e); }
 
-                    return (
-                      <CanvasComponent
-                        time={time}
-                        data={trainingData} // Some sims need data for visualization (like spam)
-                        currentInput={currentInput}
-                        currentPrediction={pred}
-                        groundTruth={groundTruth.current}
-                        neuralNet={neuralNet.current}
-                      />
-                    );
-                  })()}
+                      // Props for Phase 3/4 to only show text
+                      const extraProps = {};
+                      if (['spam_advanced', 'spam_hidden'].includes(simConfig.id)) {
+                        extraProps.allowedModes = ['text'];
+                        extraProps.hideControls = true;
+                      }
+
+                      return (
+                        <CanvasComponent
+                          time={time}
+                          data={trainingData} // Some sims need data for visualization (like spam)
+                          currentInput={currentInput}
+                          currentPrediction={pred}
+                          groundTruth={groundTruth.current}
+                          neuralNet={neuralNet.current}
+                          {...extraProps}
+                        />
+                      );
+                    })()
+                  )}
 
                   <div className="stats" style={{ marginTop: '10px' }}>
                     <p>{simConfig.description}</p>
@@ -320,78 +337,177 @@ export function App() {
 
               {activeTab === 'data' && (
                 <div className="data-content">
-                  {trainingData.length > 0 ? (
-                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                      <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                        <thead>
-                          <tr style={{ background: '#eee', borderBottom: '2px solid #ddd' }}>
-                            {/* Dynamic Header Generation */}
-                            {Array.isArray(vizProps.inputLabels) ? (
-                              vizProps.inputLabels.map((lbl, idx) => (
-                                <th key={idx} style={{ padding: '8px' }}>{lbl}</th>
-                              ))
+                  {/* View Toggle Logic */}
+                  {(() => {
+                    const ViewToggle = (
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ background: '#eee', borderRadius: '4px', padding: '2px', display: 'flex', gap: '2px' }}>
+                          <button
+                            onClick={() => setDataViewMode('table')}
+                            style={{
+                              background: dataViewMode === 'table' ? '#fff' : 'transparent',
+                              border: 'none',
+                              borderRadius: '3px',
+                              padding: '5px 15px',
+                              cursor: 'pointer',
+                              boxShadow: dataViewMode === 'table' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                              fontWeight: dataViewMode === 'table' ? 'bold' : 'normal',
+                              color: dataViewMode === 'table' ? '#333' : '#666'
+                            }}
+                          >
+                            Tabelle
+                          </button>
+                          <button
+                            onClick={() => setDataViewMode('plot')}
+                            style={{
+                              background: dataViewMode === 'plot' ? '#fff' : 'transparent',
+                              border: 'none',
+                              borderRadius: '3px',
+                              padding: '5px 15px',
+                              cursor: 'pointer',
+                              boxShadow: dataViewMode === 'plot' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                              fontWeight: dataViewMode === 'plot' ? 'bold' : 'normal',
+                              color: dataViewMode === 'plot' ? '#333' : '#666'
+                            }}
+                          >
+                            Graph
+                          </button>
+                        </div>
+                      </div>
+                    );
+
+                    const isAdvanced = ['spam_advanced', 'spam_hidden'].includes(simConfig.id);
+
+                    return (
+                      <>
+                        {/* For non-advanced phases (Physics, Spam Basic), show toggle here */}
+                        {(!isAdvanced || dataViewMode === 'table') && (
+                          <div style={{ marginBottom: '15px' }}>
+                            {ViewToggle}
+                          </div>
+                        )}
+
+                        {/* Visualization Area in Data Tab */}
+                        {(trainingData.length > 0 || simConfig.id !== 'physics') && dataViewMode === 'plot' && (
+                          <div style={{ marginBottom: '20px' }}>
+                            {simConfig.id === 'physics' ? (
+                              <PositionTimeGraph
+                                data={trainingData}
+                                groundTruth={groundTruth.current}
+                                neuralNet={trainingHistory.length > 0 ? neuralNet.current : null}
+                              />
                             ) : (
-                              <th style={{ padding: '8px' }}>Input ({vizProps.inputLabel})</th>
+                              /* Spam Phases */
+                              (() => {
+                                const extraProps = {};
+
+                                if (isAdvanced) {
+                                  extraProps.allowedModes = ['scatter', '3d', 'features']; // No text
+                                  extraProps.showModel = trainingHistory.length > 0;
+                                  // Pass the toggle control to be rendered inside the canvas controls row
+                                  extraProps.additionalControls = ViewToggle;
+                                } else {
+                                  // Phase 2
+                                  extraProps.staticMode = true;
+                                  extraProps.showGroundTruth = true; // Always show GT
+                                  extraProps.showModel = trainingHistory.length > 0; // Show model only after training
+                                }
+
+                                return (
+                                  <CanvasComponent
+                                    time={0} // Not used in static/plot mode usually
+                                    data={trainingData}
+                                    groundTruth={groundTruth.current}
+                                    neuralNet={neuralNet.current}
+                                    {...extraProps}
+                                  />
+                                )
+                              })()
                             )}
-                            <th style={{ padding: '8px' }}>Target</th>
-                            {trainingData.length > 0 && trainingData[0].text && (
-                              <th style={{ padding: '8px' }}>E-Mail Text</th>
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {trainingData.map((d, i) => {
-                            // Determine display mode based on simConfig
-                            const isClassification = ['spam', 'spam_advanced'].includes(simConfig.id);
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
-                            // Color coding (only for classification)
-                            let rowColor = 'transparent';
-                            let displayTarget = d.target;
-                            let targetStyle = { padding: '8px' };
 
-                            if (isClassification) {
-                              const isSpam = d.target === 1;
-                              rowColor = isSpam ? '#ffebee' : '#e8f5e9'; // Light Red / Light Green
-                              displayTarget = isSpam ? 'SPAM' : 'HAM';
-                              targetStyle = {
-                                ...targetStyle,
-                                fontWeight: 'bold',
-                                color: isSpam ? '#c0392b' : '#27ae60'
-                              };
-                            } else {
-                              // Regression / Physics
-                              displayTarget = typeof d.target === 'number' ? d.target.toFixed(2) : d.target;
-                            }
 
-                            return (
-                              <tr key={i} style={{ background: rowColor, borderBottom: '1px solid #ddd' }}>
-                                {/* Dynamic Feature Cells */}
-                                {Array.isArray(d.input) ? (
-                                  d.input.map((v, idx) => (
-                                    <td key={idx} style={{ padding: '8px' }}>{v.toFixed(0)}</td>
+                  {dataViewMode === 'table' && (
+                    <>
+                      {trainingData.length > 0 ? (
+                        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                            <thead>
+                              <tr style={{ background: '#eee', borderBottom: '2px solid #ddd' }}>
+                                {/* Dynamic Header Generation */}
+                                {Array.isArray(vizProps.inputLabels) ? (
+                                  vizProps.inputLabels.map((lbl, idx) => (
+                                    <th key={idx} style={{ padding: '8px' }}>{lbl}</th>
                                   ))
                                 ) : (
-                                  <td style={{ padding: '8px' }}>{d.input.toFixed(2)}</td>
+                                  <th style={{ padding: '8px' }}>Input ({vizProps.inputLabel})</th>
                                 )}
-
-                                <td style={targetStyle}>
-                                  {displayTarget}
-                                </td>
-                                {d.text && (
-                                  <td style={{ padding: '8px', color: '#555', fontStyle: 'italic', maxWidth: '300px' }}>
-                                    {d.text}
-                                  </td>
+                                <th style={{ padding: '8px' }}>Target</th>
+                                {trainingData.length > 0 && trainingData[0].text && (
+                                  <th style={{ padding: '8px' }}>E-Mail Text</th>
                                 )}
                               </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                      Noch keine Trainingsdaten generiert.
-                    </p>
+                            </thead>
+                            <tbody>
+                              {trainingData.map((d, i) => {
+                                // Determine display mode based on simConfig
+                                const isClassification = ['spam', 'spam_advanced'].includes(simConfig.id);
+
+                                // Color coding (only for classification)
+                                let rowColor = 'transparent';
+                                let displayTarget = d.target;
+                                let targetStyle = { padding: '8px' };
+
+                                if (isClassification) {
+                                  const isSpam = d.target === 1;
+                                  rowColor = isSpam ? '#ffebee' : '#e8f5e9'; // Light Red / Light Green
+                                  displayTarget = isSpam ? 'SPAM' : 'HAM';
+                                  targetStyle = {
+                                    ...targetStyle,
+                                    fontWeight: 'bold',
+                                    color: isSpam ? '#c0392b' : '#27ae60'
+                                  };
+                                } else {
+                                  // Regression / Physics
+                                  displayTarget = typeof d.target === 'number' ? d.target.toFixed(2) : d.target;
+                                }
+
+                                return (
+                                  <tr key={i} style={{ background: rowColor, borderBottom: '1px solid #ddd' }}>
+                                    {/* Dynamic Feature Cells */}
+                                    {Array.isArray(d.input) ? (
+                                      d.input.map((v, idx) => (
+                                        <td key={idx} style={{ padding: '8px' }}>{v.toFixed(0)}</td>
+                                      ))
+                                    ) : (
+                                      <td style={{ padding: '8px' }}>{d.input.toFixed(2)}</td>
+                                    )}
+
+                                    <td style={targetStyle}>
+                                      {displayTarget}
+                                    </td>
+                                    {d.text && (
+                                      <td style={{ padding: '8px', color: '#555', fontStyle: 'italic', maxWidth: '300px' }}>
+                                        {d.text}
+                                      </td>
+                                    )}
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                          Noch keine Trainingsdaten generiert.
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -429,7 +545,7 @@ export function App() {
               decimals={simConfig.id.includes('spam') ? 0 : 1}
             />
           </div>
-        </div>
+        </div >
 
         <ControlPanel
           onGenerateData={handleGenerateData}
@@ -442,7 +558,7 @@ export function App() {
           trainerType={trainerType}
           onTrainerTypeChange={setTrainerType}
         />
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }
