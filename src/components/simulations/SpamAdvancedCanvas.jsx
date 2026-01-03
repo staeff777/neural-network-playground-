@@ -29,8 +29,11 @@ export function SpamAdvancedCanvas({
     }, [allowedModes]);
 
     const [xAxis, setXAxis] = useState(0);
-    const [yAxis, setYAxis] = useState(3);
+    // Smart default: If limited features (Phase 4/5), pick the second one. Otherwise keep legacy default (3).
+    const [yAxis, setYAxis] = useState(features.length === 2 ? 1 : 3);
     const [zAxis, setZAxis] = useState(2);
+    // Background Grid State
+    const [showGrid, setShowGrid] = useState(false);
 
     // 3D Rotation State
     const [rotation, setRotation] = useState({ x: -0.5, y: 0.5 });
@@ -439,6 +442,58 @@ export function SpamAdvancedCanvas({
             ctx.rect(padding, padding, plotW, plotH);
             ctx.clip();
 
+            // --- DECISION BOUNDARY GRID ---
+            // Only active for Phase 4/5 (2 features) to avoid performance hits on higher dimensions
+            if (showGrid && neuralNet && features.length === 2) {
+                const step = 0.5;
+                // Calculate visible range in data coordinates
+                const xStart = Math.floor(visXMin / step) * step;
+                const xEnd = Math.ceil(visXMax / step) * step;
+                const yStart = Math.floor(visYMin / step) * step;
+                const yEnd = Math.ceil(visYMax / step) * step;
+
+                // Simple check to prevent hanging if zoomed out too far (too many cells)
+                const totalCells = ((xEnd - xStart) / step) * ((yEnd - yStart) / step);
+                if (totalCells < 50000) {
+                    for (let vx = xStart; vx <= xEnd; vx += step) {
+                        for (let vy = yStart; vy <= yEnd; vy += step) {
+                            try {
+                                const input = [0, 0];
+                                // Map scatter plot axes to input vector
+                                // If xAxis is 0 (Words), put vx there.
+                                if (xAxis < 2) input[xAxis] = vx;
+                                if (yAxis < 2) input[yAxis] = vy;
+
+                                const pred = neuralNet.predict(input);
+
+                                const sx = mapX(vx);
+                                const sy = mapY(vy);
+                                const sx2 = mapX(vx + step);
+                                const sy2 = mapY(vy + step);
+
+                                const w = Math.abs(sx2 - sx);
+                                const h = Math.abs(sy - sy2);
+                                const drawX = Math.min(sx, sx2);
+                                const drawY = Math.min(sy, sy2);
+
+
+                                // Color Interpolation
+                                // Green (HAM): 46, 204, 113
+                                // Red (SPAM): 231, 76, 60
+                                const r = Math.round(46 * (1 - pred) + 231 * pred);
+                                const g = Math.round(204 * (1 - pred) + 76 * pred);
+                                const b = Math.round(113 * (1 - pred) + 60 * pred);
+
+                                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.2)`; // Low opacity
+                                // Add 0.5 overlap to prevent grid lines due to antialiasing
+                                ctx.fillRect(drawX, drawY, w + 0.5, h + 0.5);
+
+                            } catch (e) { }
+                        }
+                    }
+                }
+            }
+
             const drawPoint = (input, color, radius, stroke, haloColor) => {
                 const x = mapX(input[xAxis]);
                 const y = mapY(input[yAxis]);
@@ -746,7 +801,7 @@ export function SpamAdvancedCanvas({
             ctx.restore();
         }
 
-    }, [data, currentInput, currentPrediction, neuralNet, viewMode, xAxis, yAxis, zAxis, rotation, showModel, scatterTransform]);
+    }, [data, currentInput, currentPrediction, neuralNet, viewMode, xAxis, yAxis, zAxis, rotation, showModel, scatterTransform, showGrid]);
 
     const viewLabels = {
         'features': 'Alle Features',
@@ -780,6 +835,18 @@ export function SpamAdvancedCanvas({
                                     {features.map(f => <option key={f.idx} value={f.idx}>{f.label}</option>)}
                                 </select>
                             </>
+                        )}
+
+                        {/* Grid Toggle for Scatter Mode (Phase 4/5) */}
+                        {viewMode === 'scatter' && features.length === 2 && (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '5px', fontSize: '0.8rem', cursor: 'pointer', background: '#f5f5f5', padding: '2px 5px', borderRadius: '3px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={showGrid}
+                                    onChange={e => setShowGrid(e.target.checked)}
+                                />
+                                Show Grid
+                            </label>
                         )}
 
                         {viewMode === '3d' && (
