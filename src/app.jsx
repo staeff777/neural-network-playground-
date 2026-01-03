@@ -60,6 +60,19 @@ export function App() {
       }
 
       setSimConfig(config);
+
+      // Auto-generate data on load
+      if (groundTruth.current) {
+        try {
+          const data = config.generateData(groundTruth.current);
+          setTrainingData(data);
+          // Not setting active tab to 'data' or message here to avoid visual jarring on load, 
+          // but we could set a silent status if needed.
+          // setStatusMsg(`${data.length} Trainingsdaten automatisch generiert.`);
+        } catch (e) {
+          console.error("Auto-generate data error:", e);
+        }
+      }
     } catch (e) {
       console.error("Initialization Error:", e);
       setStatusMsg(`Init Fehler: ${e.message}`);
@@ -111,20 +124,6 @@ export function App() {
   }, [isRunning, simConfig]);
 
 
-  const handleGenerateData = () => {
-    try {
-      if (!simConfig) return;
-      if (!groundTruth.current) throw new Error("Ground Truth not initialized");
-
-      const data = simConfig.generateData(groundTruth.current);
-      setTrainingData(data);
-      setStatusMsg(`${data.length} Trainingsdaten generiert.`);
-      setActiveTab('data');
-    } catch (e) {
-      console.error("Generate Data Error:", e);
-      setStatusMsg(`Fehler beim Generieren: ${e.message}`);
-    }
-  };
 
   const handleTrain = async () => {
     try {
@@ -548,7 +547,7 @@ export function App() {
         </div >
 
         <ControlPanel
-          onGenerateData={handleGenerateData}
+
           onTrain={handleTrain}
           onRun={handleRun}
           onReset={handleReset}

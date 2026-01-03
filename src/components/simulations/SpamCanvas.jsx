@@ -101,15 +101,41 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         const cx = mapX(d.input);
         const cy = mapY(d.target); // 0 or 1
 
+        // Prediction Halo
+        let predColor = null;
+        if (neuralNet && showModel) {
+          try {
+            // Determine prediction details
+            const prediction = neuralNet.predict(d.input);
+            // Classification logic: >0.5 is Spam (1), else Ham (0)
+            const isSpamPred = prediction > 0.5;
+            // Prediction Color: Red for Spam, Green for Ham
+            predColor = isSpamPred ? '#e74c3c' : '#2ecc71';
+          } catch (e) {
+            // If model not ready or error, skip halo
+          }
+        }
+
         ctx.beginPath();
         // Jitter for visibility
         const jitterX = (Math.sin(d.input * 123) * 5);
         const jitterY = (Math.cos(d.input * 321) * 5);
 
+        // Draw Halo if prediction exists
+        if (predColor) {
+          ctx.arc(cx + jitterX, cy + jitterY, 8, 0, Math.PI * 2); // Larger radius
+          ctx.strokeStyle = predColor;
+          ctx.lineWidth = 2; // Thicker line
+          ctx.stroke();
+          // Start new path for inner fill
+          ctx.beginPath();
+        }
+
         ctx.arc(cx + jitterX, cy + jitterY, 5, 0, Math.PI * 2);
         ctx.fillStyle = d.target === 1 ? '#e74c3c' : '#2ecc71';
         ctx.fill();
         ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
         ctx.stroke();
       });
       return; // Done for static mode
@@ -145,12 +171,31 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       const cx = mapX(wordCount);
       const cy = mapY(isSpam);
 
+      // Prediction Halo
+      let predColor = null;
+      if (neuralNet && showModel) {
+        try {
+          const prediction = neuralNet.predict(wordCount);
+          const isSpamPred = prediction > 0.5;
+          predColor = isSpamPred ? '#e74c3c' : '#2ecc71';
+        } catch (e) { }
+      }
+
       // Draw Point
       ctx.beginPath();
       // Visual Jitter to avoid perfect overlap?
       // Add slight random offset to x and y for visualization only
       const jitterX = (pseudoRand(i + 333) - 0.5) * 10;
       const jitterY = (pseudoRand(i + 444) - 0.5) * 10;
+
+      // Draw Halo
+      if (predColor) {
+        ctx.arc(cx + jitterX, cy + jitterY, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = predColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+      }
 
       ctx.arc(cx + jitterX, cy + jitterY, 5, 0, Math.PI * 2);
 
@@ -160,6 +205,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       ctx.fillStyle = isSpam ? '#e74c3c' : '#2ecc71';
       ctx.fill();
       ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
       ctx.stroke();
     }
 
@@ -182,6 +228,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       ctx.beginPath();
       ctx.arc(cx, cy, 8, 0, Math.PI * 2);
       ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1; // Default
       ctx.stroke();
 
       // Label

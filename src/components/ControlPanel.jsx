@@ -1,5 +1,5 @@
 export function ControlPanel({
-  onGenerateData,
+
   onTrain,
   onRun,
   onReset,
@@ -15,9 +15,7 @@ export function ControlPanel({
       aria-label="Steuerung"
       style={{ padding: '20px', background: '#eee', borderRadius: '8px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}
     >
-      <button onClick={onGenerateData} disabled={isTraining}>
-        1. Trainingsdaten Generieren
-      </button>
+
       <span aria-live="polite">Datenpunkte: {dataCount}</span>
 
       <div style={{ borderLeft: '1px solid #ccc', paddingLeft: '10px', marginLeft: '10px', display: 'flex', gap: '5px', alignItems: 'center' }}>

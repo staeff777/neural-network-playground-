@@ -269,7 +269,22 @@ export function SpamAdvancedCanvas({
                     const vz = norm(pt.input[zAxis], zMax); // Z depth
 
                     const proj = project(vx * size, vy * size, vz * size);
-                    pointsToDraw.push({ ...proj, color: pt.target === 1 ? '#e74c3c' : '#2ecc71', radius: 3 });
+
+                    // Predict for Halo
+                    let haloColor = null;
+                    if (neuralNet && showModel) {
+                        try {
+                            const pred = neuralNet.predict(pt.input);
+                            haloColor = pred > 0.5 ? '#e74c3c' : '#2ecc71';
+                        } catch (e) { }
+                    }
+
+                    pointsToDraw.push({
+                        ...proj,
+                        color: pt.target === 1 ? '#e74c3c' : '#2ecc71',
+                        radius: 3,
+                        haloColor
+                    });
                 });
             }
 
@@ -278,6 +293,15 @@ export function SpamAdvancedCanvas({
             pointsToDraw.sort((a, b) => a.z - b.z);
 
             pointsToDraw.forEach(p => {
+                // Background Halo
+                if (p.haloColor) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius + 2, 0, Math.PI * 2);
+                    ctx.strokeStyle = p.haloColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 ctx.fillStyle = p.color;
@@ -337,12 +361,20 @@ export function SpamAdvancedCanvas({
             ctx.fillText(`${FEATURES[yAxis].label} (max: ${yMax})`, 0, 0);
             ctx.restore();
 
-            const drawPoint = (input, color, radius, stroke) => {
+            const drawPoint = (input, color, radius, stroke, haloColor) => {
                 const xVal = input[xAxis];
                 const yVal = input[yAxis];
 
                 const x = originX + (xVal / xMax) * plotW;
                 const y = originY - (yVal / yMax) * plotH;
+
+                if (haloColor) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius + 3, 0, 2 * Math.PI);
+                    ctx.strokeStyle = haloColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
 
                 ctx.beginPath();
                 ctx.arc(x, y, radius, 0, 2 * Math.PI);
@@ -358,7 +390,14 @@ export function SpamAdvancedCanvas({
             // Draw Data
             if (data) {
                 data.forEach(pt => {
-                    drawPoint(pt.input, pt.target === 1 ? '#e74c3c' : '#2ecc71', 5, '#fff');
+                    let haloColor = null;
+                    if (neuralNet && showModel) {
+                        try {
+                            const pred = neuralNet.predict(pt.input);
+                            haloColor = pred > 0.5 ? '#e74c3c' : '#2ecc71';
+                        } catch (e) { }
+                    }
+                    drawPoint(pt.input, pt.target === 1 ? '#e74c3c' : '#2ecc71', 5, '#fff', haloColor);
                 });
             }
 
@@ -577,6 +616,22 @@ export function SpamAdvancedCanvas({
                     const xVal = pt.input[plot.idx];
                     const px = plot.x + (xVal / plot.max) * w;
                     const py = plot.y + h - (pt.target * (h - 20)) - 10;
+
+                    let haloColor = null;
+                    if (neuralNet && showModel) {
+                        try {
+                            const pred = neuralNet.predict(pt.input);
+                            haloColor = pred > 0.5 ? '#e74c3c' : '#2ecc71';
+                        } catch (e) { }
+                    }
+
+                    if (haloColor) {
+                        ctx.beginPath();
+                        ctx.arc(px, py, 4.5, 0, 2 * Math.PI);
+                        ctx.strokeStyle = haloColor;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
 
                     ctx.beginPath();
                     ctx.arc(px, py, 3, 0, 2 * Math.PI);
