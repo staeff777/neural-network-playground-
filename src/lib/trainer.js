@@ -325,7 +325,7 @@ export class ExhaustiveTrainer {
     const MAX_STEPS = 20000;
     const INITIAL_RADIUS_FACTOR = 0.8; // Start with searching 50% of the space
     const DECAY = 0.999; // decay radius per step
-    const PHASE_1_RATIO = 0.8;
+    const PHASE_1_RATIO = 0.5;
     let minError = Infinity;
     let bestParams = {};
 
@@ -420,7 +420,7 @@ export class ExhaustiveTrainer {
         // Normalize step within phase
         const progress = step / (MAX_STEPS * PHASE_1_RATIO);
         T = 0.2 * (1 - progress * 0.5); // 0.2 -> 0.1
-        radiusFactor = INITIAL_RADIUS_FACTOR * (1 - progress * 0.6); // 0.5 -> 0.25 (Keep it reasonably large)
+        radiusFactor = INITIAL_RADIUS_FACTOR * (1 - progress * 0.5); // 0.5 -> 0.25 (Keep it reasonably large)
 
       } else {
         // Refinement: Standard cooling
@@ -446,16 +446,16 @@ export class ExhaustiveTrainer {
 
           // --- Phase 1 Only: Dynamic Boundary Extension ---
           if (isPhase1) {
-            const threshold = range.span * 0.2;
+            const threshold = range.span * 0.3;
             const isBestVal = bestParams._array && Math.abs(val - bestParams._array[idx]) < 1e-9;
 
             if (isBestVal && val < range.min + threshold) {
-              range.min -= range.span * 0.3;
+              range.min -= range.span * 0.4;
               range.span = range.max - range.min;
               didExtend = true;
             }
             if (isBestVal && val > range.max - threshold) {
-              range.max += range.span * 0.3;
+              range.max += range.span * 0.4;
               range.span = range.max - range.min;
               didExtend = true;
             }
