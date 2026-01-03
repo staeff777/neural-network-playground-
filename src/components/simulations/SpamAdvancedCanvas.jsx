@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'preact/hooks';
+import { getNiceTicks } from '../../utils/graphUtils';
 
 const FEATURES = [
     { label: "Spam Words", idx: 0, max: 15 },
@@ -18,87 +19,116 @@ export function SpamAdvancedCanvas({
     additionalControls = null
 }) {
     const canvasRef = useRef(null);
-    // Initialize viewMode to the first allowed mode
     const [viewMode, setViewMode] = useState(allowedModes[0]);
 
-    // Sync viewMode if allowedModes changes and current is invalid
     useEffect(() => {
         if (!allowedModes.includes(viewMode)) {
             setViewMode(allowedModes[0]);
         }
     }, [allowedModes]);
 
-    // Axes Selection
-    const [xAxis, setXAxis] = useState(0); // Default: Spam Words
-    const [yAxis, setYAxis] = useState(3); // Default: Total Words
-    const [zAxis, setZAxis] = useState(2); // Default: Links (for 3D)
+    const [xAxis, setXAxis] = useState(0);
+    const [yAxis, setYAxis] = useState(3);
+    const [zAxis, setZAxis] = useState(2);
 
     // 3D Rotation State
     const [rotation, setRotation] = useState({ x: -0.5, y: 0.5 });
+
+    // Scatter Zoom/Pan State
+    const [scatterTransform, setScatterTransform] = useState({ k: 1, x: 0, y: 0 });
+
     const isDragging = useRef(false);
     const lastMouse = useRef({ x: 0, y: 0 });
-
-    // State for Tooltip
     const [hoverInfo, setHoverInfo] = useState(null);
 
+    // Hitbox tracking
+    const drawnPoints = useRef([]);
+
+    const handleWheel = (e) => {
+        if (viewMode !== 'scatter') return;
+        e.preventDefault();
+
+        const zoomSensitivity = 0.001;
+        const delta = -e.deltaY * zoomSensitivity;
+        const oldK = scatterTransform.k;
+        let newK = oldK * (1 + delta);
+        newK = Math.max(0.5, Math.min(newK, 50)); // Allow deeper zoom
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+
+        const padding = 50;
+        const originY = canvas.height - padding;
+
+        const graphX = (mx - padding - scatterTransform.x) / oldK;
+        const valY_scaled_unzoomed = (originY + scatterTransform.y - my) / oldK;
+
+        const newTx = mx - padding - graphX * newK;
+        const newTy = my - originY + valY_scaled_unzoomed * newK;
+
+        setScatterTransform({ k: newK, x: newTx, y: newTy });
+    };
+
     const handleMouseDown = (e) => {
-        if (viewMode !== '3d') return;
+        if (viewMode !== '3d' && viewMode !== 'scatter') return;
         isDragging.current = true;
         lastMouse.current = { x: e.clientX, y: e.clientY };
     };
 
     const handleMouseMove = (e) => {
-        // Existing 3D rotation logic
-        if (isDragging.current && viewMode === '3d') {
-            const deltaX = e.clientX - lastMouse.current.x;
-            const deltaY = e.clientY - lastMouse.current.y;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-            setRotation(prev => ({
-                x: prev.x + deltaY * 0.01,
-                y: prev.y + deltaX * 0.01
-            }));
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
 
+        // Dragging Logic
+        if (isDragging.current) {
+            const deltaX = (e.clientX - lastMouse.current.x) * scaleX;
+            const deltaY = (e.clientY - lastMouse.current.y) * scaleY;
             lastMouse.current = { x: e.clientX, y: e.clientY };
-            return; // Exit if dragging in 3D
-        }
 
-        // New tooltip logic for scatter plot
-        if (viewMode === 'scatter') {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-
-            let found = null;
-            const hitRadius = 10; // Radius for hit detection
-
-            const padding = 50;
-            const plotW = canvas.width - 2 * padding;
-            const plotH = canvas.height - 2 * padding;
-            const originX = padding;
-            const originY = canvas.height - padding;
-            const xMax = FEATURES[xAxis].max;
-            const yMax = FEATURES[yAxis].max;
-
-            if (data) {
-                for (const pt of data) {
-                    const x = originX + (pt.input[xAxis] / xMax) * plotW;
-                    const y = originY - (pt.input[yAxis] / yMax) * plotH;
-
-                    const dist = Math.sqrt((x - mx) ** 2 + (y - my) ** 2);
-                    if (dist < hitRadius) {
-                        found = { x, y, text: pt.text, isSpam: pt.target === 1 };
-                        break;
-                    }
-                }
+            if (viewMode === '3d') {
+                setRotation(prev => ({
+                    x: prev.x + deltaY * 0.01,
+                    y: prev.y + deltaX * 0.01
+                }));
+            } else if (viewMode === 'scatter') {
+                setScatterTransform(prev => ({
+                    ...prev,
+                    x: prev.x + deltaX,
+                    y: prev.y + deltaY
+                }));
             }
-            setHoverInfo(found);
-        } else {
-            // If not in scatter mode and not dragging in 3D, clear hover info
-            setHoverInfo(null);
+            return;
         }
+
+        // Universal Hover Logic using drawnPoints
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+
+        let found = null;
+        const hitRadius = 15;
+        let minDist = hitRadius;
+
+        // Unlocked loop for all modes
+        const points = drawnPoints.current;
+        for (let i = points.length - 1; i >= 0; i--) {
+            const p = points[i];
+            const dist = Math.sqrt((p.x - mx) ** 2 + (p.y - my) ** 2);
+            if (dist < minDist) {
+                minDist = dist;
+                found = p.info;
+            }
+        }
+        setHoverInfo(found);
     };
 
     const handleMouseUp = () => {
@@ -106,7 +136,8 @@ export function SpamAdvancedCanvas({
     };
 
     const handleMouseOut = () => {
-        setHoverInfo(null); // Clear tooltip when mouse leaves canvas
+        setHoverInfo(null);
+        isDragging.current = false;
     };
 
     useEffect(() => {
@@ -118,16 +149,17 @@ export function SpamAdvancedCanvas({
 
         ctx.clearRect(0, 0, width, height);
         ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, width, height); // dynamic input needs clear background
+        ctx.fillRect(0, 0, width, height);
 
-        // --- 3D PLOT MODE ---
-        // Helper to find max value in data for a feature index
+        drawnPoints.current = []; // Reset hitboxes
+
         const getDataMax = (idx) => {
             if (!data || data.length === 0) return FEATURES[idx].max;
             const max = Math.max(...data.map(d => d.input[idx]));
-            return max > 0 ? max : FEATURES[idx].max; // Prevent 0 div
+            return max > 0 ? max : FEATURES[idx].max;
         };
 
+        // --- 3D PLOT MODE ---
         if (viewMode === '3d') {
             const xMax = getDataMax(xAxis);
             const yMax = getDataMax(yAxis);
@@ -135,19 +167,13 @@ export function SpamAdvancedCanvas({
 
             const cx = width / 2;
             const cy = height / 2;
-            const size = 150; // Cube half-size
+            const size = 150;
 
-            // Projection Helper
             const project = (x, y, z) => {
-                // Rotate Y
                 let x1 = x * Math.cos(rotation.y) - z * Math.sin(rotation.y);
                 let z1 = x * Math.sin(rotation.y) + z * Math.cos(rotation.y);
-
-                // Rotate X
                 let y1 = y * Math.cos(rotation.x) - z1 * Math.sin(rotation.x);
                 let z2 = y * Math.sin(rotation.x) + z1 * Math.cos(rotation.x);
-
-                // Perspective
                 const scale = 400 / (400 - z2);
                 return {
                     x: cx + x1 * scale,
@@ -156,19 +182,16 @@ export function SpamAdvancedCanvas({
                 };
             };
 
-            // Draw Cube Axis
             const corners = [
                 [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
                 [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
             ];
             const projCorners = corners.map(c => project(c[0] * size, c[1] * size, c[2] * size));
 
-            // Axis Colors
-            const colX = '#e29301ff'; // Dark Red
-            const colY = '#2980b9'; // Dark Blue
-            const colZ = '#c00798ff'; // Dark Orange
+            const colX = '#e29301ff';
+            const colY = '#2980b9';
+            const colZ = '#c00798ff';
 
-            // Draw Cube Edges (Axis-aligned coloring)
             const drawEdges = (indices, color) => {
                 ctx.beginPath();
                 ctx.strokeStyle = color;
@@ -180,49 +203,29 @@ export function SpamAdvancedCanvas({
                 ctx.stroke();
             };
 
-            // Indices based on corners array order:
-            // 0:[-1,-1,-1], 1:[1,-1,-1], 2:[1,1,-1], 3:[-1,1,-1] (Back Face Z=-1)
-            // 4:[-1,-1,1], 5:[1,-1,1], 6:[1,1,1], 7:[-1,1,1] (Front Face Z=1)
-
-            // X-Edges (moving along X, indices 0-1, 3-2, 4-5, 7-6)
             drawEdges([[0, 1], [3, 2], [4, 5], [7, 6]], colX);
-
-            // Y-Edges (moving along Y, indices 0-3, 1-2, 4-7, 5-6)
             drawEdges([[0, 3], [1, 2], [4, 7], [5, 6]], colY);
-
-            // Z-Edges (connecting back to front, 0-4, 1-5, 2-6, 3-7)
             drawEdges([[0, 4], [1, 5], [2, 6], [3, 7]], colZ);
 
-            // Draw Axis Labels
             ctx.font = 'bold 11px sans-serif';
-
             ctx.fillStyle = colX;
             ctx.fillText("X: " + FEATURES[xAxis].label, projCorners[1].x, projCorners[1].y);
-
             ctx.fillStyle = colY;
             ctx.fillText("Y: " + FEATURES[yAxis].label, projCorners[3].x, projCorners[3].y);
-
             ctx.fillStyle = colZ;
             ctx.fillText("Z: " + FEATURES[zAxis].label, projCorners[4].x, projCorners[4].y);
 
-            // Draw Points
             const pointsToDraw = [];
-
-            // Helper to normalize data -1 to 1 based on dynamic max
             const norm = (val, max) => (val / max) * 2 - 1;
 
-            // --- DRAW DECISION PLANE (3D) ---
             if (showModel && neuralNet && neuralNet.weights) {
                 const wX = neuralNet.weights[xAxis] || 0;
                 const wY = neuralNet.weights[yAxis] || 0;
                 const wZ = neuralNet.weights[zAxis] || 0;
                 const b = neuralNet.bias || 0;
 
-                // Equation: wX*x + wY*y + wZ*z + b = 0 => z = -(wX*x + wY*y + b) / wZ
-
                 if (Math.abs(wZ) > 0.001) {
-                    // Draw a grid on the plane
-                    ctx.strokeStyle = 'rgba(142, 68, 173, 0.3)'; // Semi-transparent Purple
+                    ctx.strokeStyle = 'rgba(142, 68, 173, 0.3)';
                     ctx.lineWidth = 1;
 
                     const getZ = (vx, vy) => {
@@ -244,15 +247,12 @@ export function SpamAdvancedCanvas({
                     };
 
                     const steps = 6;
-                    // Grid Lines along X
                     for (let i = 0; i <= steps; i++) {
                         const vy = -1 + (i / steps) * 2;
                         const z1 = getZ(-1, vy);
                         const z2 = getZ(1, vy);
                         drawPlaneLine({ x: -1, y: vy, z: z1 }, { x: 1, y: vy, z: z2 });
                     }
-
-                    // Grid Lines along Y
                     for (let i = 0; i <= steps; i++) {
                         const vx = -1 + (i / steps) * 2;
                         const z1 = getZ(vx, -1);
@@ -265,12 +265,11 @@ export function SpamAdvancedCanvas({
             if (data) {
                 data.forEach(pt => {
                     const vx = norm(pt.input[xAxis], xMax);
-                    const vy = -norm(pt.input[yAxis], yMax); // Y inverted in canvas
-                    const vz = norm(pt.input[zAxis], zMax); // Z depth
+                    const vy = -norm(pt.input[yAxis], yMax);
+                    const vz = norm(pt.input[zAxis], zMax);
 
                     const proj = project(vx * size, vy * size, vz * size);
 
-                    // Predict for Halo
                     let haloColor = null;
                     if (neuralNet && showModel) {
                         try {
@@ -283,17 +282,35 @@ export function SpamAdvancedCanvas({
                         ...proj,
                         color: pt.target === 1 ? '#e74c3c' : '#2ecc71',
                         radius: 3,
-                        haloColor
+                        haloColor,
+                        pt // Keep ref
                     });
                 });
             }
 
-
-            // Sort by depth (Painter's algo)
             pointsToDraw.sort((a, b) => a.z - b.z);
 
             pointsToDraw.forEach(p => {
-                // Background Halo
+                // Record Hitbox (only if in front of "camera")
+                if (p.z < 3) {
+                    drawnPoints.current.push({
+                        x: p.x, y: p.y,
+                        info: {
+                            x: p.x, y: p.y,
+                            text: p.pt.text,
+                            isSpam: p.pt.target === 1,
+                            features: {
+                                xLabel: FEATURES[xAxis].label,
+                                xVal: p.pt.input[xAxis],
+                                yLabel: FEATURES[yAxis].label,
+                                yVal: p.pt.input[yAxis],
+                                zLabel: FEATURES[zAxis].label,
+                                zVal: p.pt.input[zAxis]
+                            }
+                        }
+                    });
+                }
+
                 if (p.haloColor) {
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.radius + 2, 0, Math.PI * 2);
@@ -301,19 +318,13 @@ export function SpamAdvancedCanvas({
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
                 }
-
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 ctx.fillStyle = p.color;
                 ctx.fill();
-                if (p.border) {
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
             });
 
-            return;
+            // return; // Allow fallthrough for tooltips
         }
 
         // --- SCATTER PLOT MODE (2D) ---
@@ -324,49 +335,103 @@ export function SpamAdvancedCanvas({
             const padding = 50;
             const plotW = width - 2 * padding;
             const plotH = height - 2 * padding;
-            const originX = padding;
             const originY = height - padding;
 
             const colX = '#c0392b';
             const colY = '#2980b9';
 
-            // Axes
+            // Transformers
+            const mapX = (val) => padding + (val / xMax) * plotW * scatterTransform.k + scatterTransform.x;
+            const mapY = (val) => originY - (val / yMax) * plotH * scatterTransform.k + scatterTransform.y;
+
+            // Box Clipping
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(padding, padding, plotW, plotH);
+            ctx.clip();
+            ctx.restore();
+
+            // Inverse Map for Ticks
+            const getInvX = (sx) => ((sx - padding - scatterTransform.x) / (plotW * scatterTransform.k)) * xMax;
+            const getInvY = (sy) => ((originY + scatterTransform.y - sy) / (plotH * scatterTransform.k)) * yMax;
+
+            const visXMin = getInvX(padding);
+            const visXMax = getInvX(padding + plotW);
+            const visYMin = getInvY(originY); // Bottom val
+            const visYMax = getInvY(padding); // Top val
+
+            // Tick Gen
+            const xTicks = getNiceTicks(Math.min(visXMin, visXMax), Math.max(visXMin, visXMax), 8);
+            const yTicks = getNiceTicks(Math.min(visYMin, visYMax), Math.max(visYMin, visYMax), 6);
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#eee'; // Grid color
+            ctx.fillStyle = '#666';
+            ctx.font = '10px sans-serif';
+
+            // Draw Grid & Ticks X
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            xTicks.forEach(val => {
+                const x = mapX(val);
+                if (x < padding || x > padding + plotW) return;
+
+                // Grid
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, originY);
+                ctx.stroke();
+
+                // Label
+                ctx.fillText(Number(val.toFixed(2)), x, originY + 5);
+            });
+
+            // Draw Grid & Ticks Y
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            yTicks.forEach(val => {
+                const y = mapY(val);
+                if (y < padding || y > originY) return;
+
+                // Grid
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + plotW, y);
+                ctx.stroke();
+
+                // Label
+                ctx.fillText(Number(val.toFixed(2)), padding - 5, y);
+            });
+
+
+            // Axes Limit Box
+            ctx.strokeStyle = '#ccc';
             ctx.lineWidth = 2;
-
-            // X Axis
-            ctx.beginPath();
-            ctx.strokeStyle = colX;
-            ctx.moveTo(originX, originY);
-            ctx.lineTo(originX + plotW, originY);
-            ctx.stroke();
-
-            // Y Axis
-            ctx.beginPath();
-            ctx.strokeStyle = colY;
-            ctx.moveTo(originX, originY);
-            ctx.lineTo(originX, originY - plotH);
-            ctx.stroke();
+            ctx.strokeRect(padding, padding, plotW, plotH);
 
             // Labels with Max Values
             ctx.textAlign = 'center';
-            ctx.font = 'bold 14px sans-serif';
+            ctx.font = 'bold 12px sans-serif';
 
             ctx.fillStyle = colX;
-            ctx.fillText(`${FEATURES[xAxis].label} (max: ${xMax})`, originX + plotW / 2, originY + 35);
+            ctx.fillText(`${FEATURES[xAxis].label}`, padding + plotW / 2, originY + 30);
 
             ctx.save();
             ctx.translate(15, originY - plotH / 2);
             ctx.rotate(-Math.PI / 2);
             ctx.fillStyle = colY;
-            ctx.fillText(`${FEATURES[yAxis].label} (max: ${yMax})`, 0, 0);
+            ctx.fillText(`${FEATURES[yAxis].label}`, 0, 0);
             ctx.restore();
 
-            const drawPoint = (input, color, radius, stroke, haloColor) => {
-                const xVal = input[xAxis];
-                const yVal = input[yAxis];
+            // --- DATA CLIPPING START ---
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(padding, padding, plotW, plotH);
+            ctx.clip();
 
-                const x = originX + (xVal / xMax) * plotW;
-                const y = originY - (yVal / yMax) * plotH;
+            const drawPoint = (input, color, radius, stroke, haloColor) => {
+                const x = mapX(input[xAxis]);
+                const y = mapY(input[yAxis]);
 
                 if (haloColor) {
                     ctx.beginPath();
@@ -390,6 +455,26 @@ export function SpamAdvancedCanvas({
             // Draw Data
             if (data) {
                 data.forEach(pt => {
+                    const x = mapX(pt.input[xAxis]);
+                    const y = mapY(pt.input[yAxis]);
+
+                    if (x < padding || x > padding + plotW || y < padding || y > originY) return;
+
+                    drawnPoints.current.push({
+                        x, y,
+                        info: {
+                            x, y,
+                            text: pt.text,
+                            isSpam: pt.target === 1,
+                            features: {
+                                xLabel: FEATURES[xAxis].label,
+                                xVal: pt.input[xAxis],
+                                yLabel: FEATURES[yAxis].label,
+                                yVal: pt.input[yAxis]
+                            }
+                        }
+                    });
+
                     let haloColor = null;
                     if (neuralNet && showModel) {
                         try {
@@ -402,125 +487,55 @@ export function SpamAdvancedCanvas({
             }
 
             // --- DRAW DECISION LINE (2D) ---
-            // Equation: wX*x + wY*y + b = 0  => y = (-wX*x - b) / wY
             if (showModel && neuralNet) {
                 let weights = neuralNet.weights;
                 const bias = neuralNet.bias || 0;
 
-                // Handle legacy structure if needed, but spam_advanced uses .weights array
                 if (weights) {
                     const wX = weights[xAxis] || 0;
                     const wY = weights[yAxis] || 0;
                     const b = bias;
 
-                    // We need to find two points on the edges of the plot to draw the line.
-                    // The plot shows x from 0 to xMax, y from 0 to yMax.
-                    // We'll calculate y for x=0 and x=xMax.
-
-                    // Helper to get pixel coordinates
-                    const toPix = (xVal, yVal) => {
-                        const px = originX + (xVal / xMax) * plotW;
-                        const py = originY - (yVal / yMax) * plotH;
-                        return { x: px, y: py };
-                    };
-
                     ctx.beginPath();
-                    ctx.strokeStyle = '#c0392b'; // Same red as Spam usually, or maybe purple? Let's use darker gray or specific style
-                    ctx.strokeStyle = 'rgba(142, 68, 173, 0.8)'; // Purple
+                    ctx.strokeStyle = 'rgba(142, 68, 173, 0.8)';
                     ctx.lineWidth = 2;
                     ctx.setLineDash([10, 5]);
 
-                    // Case A: Not vertical
+                    const bigMin = visXMin - (visXMax - visXMin);
+                    const bigMax = visXMax + (visXMax - visXMin);
+                    const toPix = (valX, valY) => ({ x: mapX(valX), y: mapY(valY) });
+
                     if (Math.abs(wY) > 0.001) {
                         const f = (x) => (-wX * x - b) / wY;
-
-                        const p1 = toPix(0, f(0));
-                        const p2 = toPix(xMax, f(xMax));
-
-                        // Note: We don't strictly clip to box here for simplicity, canvas clipping handles it effectively 
-                        // if we just draw long lines, BUT we want it to look nice.
-                        // Let's rely on Start/End points at x=0 and x=xMax.
-
+                        const p1 = toPix(bigMin, f(bigMin));
+                        const p2 = toPix(bigMax, f(bigMax));
                         ctx.moveTo(p1.x, p1.y);
                         ctx.lineTo(p2.x, p2.y);
                     }
-                    // Case B: Vertical Line (wY is 0) => wX*x + b = 0 => x = -b/wX
                     else if (Math.abs(wX) > 0.001) {
                         const xVal = -b / wX;
-                        const p1 = toPix(xVal, 0);
-                        const p2 = toPix(xVal, yMax);
+                        const p1 = toPix(xVal, visYMin - 100);
+                        const p2 = toPix(xVal, visYMax + 100);
                         ctx.moveTo(p1.x, p1.y);
                         ctx.lineTo(p2.x, p2.y);
                     }
 
                     ctx.stroke();
                     ctx.setLineDash([]);
-
-                    // Draw Equation Label
-                    ctx.fillStyle = 'rgba(142, 68, 173, 1)';
-                    ctx.font = 'bold 12px monospace';
-                    ctx.textAlign = 'left';
-                    const eq = `${wX.toFixed(2)}x + ${wY.toFixed(2)}y + ${b.toFixed(2)} = 0`;
-                    ctx.fillText(eq, originX + 10, originY - plotH - 5);
                 }
             }
 
-            // Draw Current
             if (currentInput) {
                 drawPoint(currentInput, '#3498db', 8, '#2980b9');
             }
+
+            ctx.restore(); // END DATA CLIP
 
             // Info Text
             ctx.fillStyle = '#666';
             ctx.textAlign = 'right';
             ctx.font = '11px sans-serif';
             ctx.fillText("Rot=Spam, Grün=OK", width - 10, 20);
-
-            // Tooltip Overlay
-            if (hoverInfo) {
-                ctx.save();
-                ctx.fillStyle = 'rgba(0,0,0,0.85)';
-                ctx.strokeStyle = '#fff';
-
-                const text = hoverInfo.text || "No Text";
-                const label = hoverInfo.isSpam ? "SPAM" : "HAM";
-                const metrics = ctx.measureText(text);
-
-                const tw = Math.max(metrics.width, 100) + 20;
-                const th = 50;
-                let tx = hoverInfo.x + 15;
-                let ty = hoverInfo.y - 15;
-
-                // Canvas boundaries check
-                if (tx + tw > width) tx = hoverInfo.x - tw - 10;
-                if (ty + th > height) ty = hoverInfo.y - th - 10;
-                if (ty < 0) ty = hoverInfo.y + 20;
-
-                // Box
-                ctx.beginPath();
-                ctx.roundRect(tx, ty, tw, th, 5);
-                ctx.fill();
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                // Text
-                ctx.textBaseline = 'top';
-                ctx.textAlign = 'left';
-
-                // Label
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillStyle = hoverInfo.isSpam ? '#e74c3c' : '#2ecc71';
-                ctx.fillText(label, tx + 10, ty + 10);
-
-                // Content
-                ctx.font = 'italic 11px sans-serif';
-                ctx.fillStyle = '#ddd';
-                ctx.fillText(text, tx + 10, ty + 28);
-
-                ctx.restore();
-            }
-
-            return;
         }
 
         // --- TEXT VIEW MODE ---
@@ -535,13 +550,11 @@ export function SpamAdvancedCanvas({
                 return;
             }
 
-            // Draw Background based on Prediction
             const isSpamPred = currentPrediction > 0.5;
-            const bgColor = isSpamPred ? '#feeff0' : '#effaf0'; // Light Red/Green
+            const bgColor = isSpamPred ? '#feeff0' : '#effaf0';
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, width, height);
 
-            // Text Wrapping
             const text = currentInput.text;
             ctx.fillStyle = '#333';
             ctx.font = '24px serif';
@@ -568,17 +581,14 @@ export function SpamAdvancedCanvas({
             }
             ctx.fillText(line, x, y);
 
-            // Prediction & Ground Truth
             y += 60;
 
-            // Ground Truth
             const isSpamGT = currentInput.groundTruth === 1;
             ctx.font = 'bold 16px sans-serif';
             ctx.fillStyle = '#555';
             ctx.fillText(`Wahrheit: ${isSpamGT ? 'SPAM' : 'HAM'}`, x, y);
 
             y += 30;
-            // Prediction
             const probPct = (currentPrediction * 100).toFixed(1);
             ctx.font = 'bold 20px sans-serif';
             ctx.fillStyle = isSpamPred ? '#c0392b' : '#27ae60';
@@ -587,75 +597,147 @@ export function SpamAdvancedCanvas({
             return;
         }
 
-        // --- FEATURE HISTOGRAMS MODE (Original) ---
-        const pad = 30;
-        const w = (width - 3 * pad) / 2;
-        const h = (height - 3 * pad) / 2;
+        // --- FEATURE HISTOGRAMS MODE ---
+        if (viewMode === 'features') {
+            const pad = 30;
+            const w = (width - 3 * pad) / 2;
+            const h = (height - 3 * pad) / 2;
 
-        const plots = [
-            { x: pad, y: pad, ...FEATURES[0] },
-            { x: pad + w + pad, y: pad, ...FEATURES[1] },
-            { x: pad, y: pad + h + pad, ...FEATURES[2] },
-            { x: pad + w + pad, y: pad + h + pad, ...FEATURES[3] }
-        ];
+            const plots = [
+                { x: pad, y: pad, ...FEATURES[0] },
+                { x: pad + w + pad, y: pad, ...FEATURES[1] },
+                { x: pad, y: pad + h + pad, ...FEATURES[2] },
+                { x: pad + w + pad, y: pad + h + pad, ...FEATURES[3] }
+            ];
 
-        plots.forEach(plot => {
-            // Draw Box
-            ctx.strokeStyle = '#ccc';
-            ctx.strokeRect(plot.x, plot.y, w, h);
+            plots.forEach(plot => {
+                ctx.strokeStyle = '#ccc';
+                ctx.strokeRect(plot.x, plot.y, w, h);
 
-            // Label
-            ctx.fillStyle = '#333';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(plot.label, plot.x + w / 2, plot.y - 5);
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(plot.label, plot.x + w / 2, plot.y - 5);
 
-            // Draw Points
-            if (data) {
-                data.forEach(pt => {
-                    const xVal = pt.input[plot.idx];
-                    const px = plot.x + (xVal / plot.max) * w;
-                    const py = plot.y + h - (pt.target * (h - 20)) - 10;
+                if (data) {
+                    data.forEach(pt => {
+                        const xVal = pt.input[plot.idx];
+                        const px = plot.x + (xVal / plot.max) * w;
+                        const py = plot.y + h - (pt.target * (h - 20)) - 10;
 
-                    let haloColor = null;
-                    if (neuralNet && showModel) {
-                        try {
-                            const pred = neuralNet.predict(pt.input);
-                            haloColor = pred > 0.5 ? '#e74c3c' : '#2ecc71';
-                        } catch (e) { }
-                    }
+                        drawnPoints.current.push({
+                            x: px, y: py,
+                            info: {
+                                x: px, y: py,
+                                text: pt.text,
+                                isSpam: pt.target === 1,
+                                features: {
+                                    valLabel: plot.label,
+                                    val: xVal
+                                }
+                            }
+                        });
 
-                    if (haloColor) {
+                        let haloColor = null;
+                        if (neuralNet && showModel) {
+                            try {
+                                const pred = neuralNet.predict(pt.input);
+                                haloColor = pred > 0.5 ? '#e74c3c' : '#2ecc71';
+                            } catch (e) { }
+                        }
+
+                        if (haloColor) {
+                            ctx.beginPath();
+                            ctx.arc(px, py, 4.5, 0, 2 * Math.PI);
+                            ctx.strokeStyle = haloColor;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+
                         ctx.beginPath();
-                        ctx.arc(px, py, 4.5, 0, 2 * Math.PI);
-                        ctx.strokeStyle = haloColor;
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                    }
+                        ctx.arc(px, py, 3, 0, 2 * Math.PI);
+                        ctx.fillStyle = pt.target ? 'rgba(231, 76, 60, 0.6)' : 'rgba(46, 204, 113, 0.6)';
+                        ctx.fill();
+                    });
+                }
 
+                if (currentInput) {
+                    const xVal = currentInput[plot.idx];
+                    const px = plot.x + (xVal / plot.max) * w;
                     ctx.beginPath();
-                    ctx.arc(px, py, 3, 0, 2 * Math.PI);
-                    ctx.fillStyle = pt.target ? 'rgba(231, 76, 60, 0.6)' : 'rgba(46, 204, 113, 0.6)';
-                    ctx.fill();
-                });
+                    ctx.moveTo(px, plot.y);
+                    ctx.lineTo(px, plot.y + h);
+                    ctx.strokeStyle = '#3498db';
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            });
+        } // End features mode
+
+        // Tooltip Overlay for Features Mode
+        if (hoverInfo && (viewMode === 'features' || viewMode === 'scatter' || viewMode === '3d')) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.85)';
+            ctx.strokeStyle = '#fff';
+
+            const text = hoverInfo.text || "No Text";
+            const label = hoverInfo.isSpam ? "SPAM" : "HAM";
+            const metrics = ctx.measureText(text);
+
+            const tw = Math.max(metrics.width, 140) + 20;
+            let th = 70;
+
+            // Dynamic Height
+            if (hoverInfo.features) {
+                if (hoverInfo.features.zLabel) th = 90;
+                else if (hoverInfo.features.yLabel) th = 85;
+                else th = 60; // Just one val
             }
 
-            if (currentInput) {
-                const xVal = currentInput[plot.idx];
-                const px = plot.x + (xVal / plot.max) * w;
-                ctx.beginPath();
-                ctx.moveTo(px, plot.y);
-                ctx.lineTo(px, plot.y + h);
-                ctx.strokeStyle = '#3498db';
-                ctx.setLineDash([5, 5]);
-                ctx.stroke();
-                ctx.setLineDash([]);
+            let tx = hoverInfo.x + 15;
+            let ty = hoverInfo.y - 15;
+
+            if (tx + tw > width) tx = hoverInfo.x - tw - 10;
+            if (ty + th > height) ty = hoverInfo.y - th - 10;
+            if (ty < 0) ty = hoverInfo.y + 20;
+
+            ctx.beginPath();
+            ctx.roundRect(tx, ty, tw, th, 5);
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.textBaseline = 'top';
+            ctx.textAlign = 'left';
+
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillStyle = hoverInfo.isSpam ? '#e74c3c' : '#2ecc71';
+            ctx.fillText(label, tx + 10, ty + 10);
+
+            ctx.fillStyle = '#ddd';
+            ctx.font = 'italic 11px sans-serif';
+            ctx.fillText(text, tx + 10, ty + 28);
+
+            if (hoverInfo.features) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '11px monospace';
+                if (hoverInfo.features.xLabel) {
+                    ctx.fillText(`${hoverInfo.features.xLabel}: ${hoverInfo.features.xVal}`, tx + 10, ty + 46);
+                    ctx.fillText(`${hoverInfo.features.yLabel}: ${hoverInfo.features.yVal}`, tx + 10, ty + 60);
+                    if (hoverInfo.features.zLabel) {
+                        ctx.fillText(`${hoverInfo.features.zLabel}: ${hoverInfo.features.zVal}`, tx + 10, ty + 74);
+                    }
+                } else if (hoverInfo.features.valLabel) {
+                    ctx.fillText(`${hoverInfo.features.valLabel}: ${hoverInfo.features.val}`, tx + 10, ty + 46);
+                }
             }
-        });
 
-    }, [data, currentInput, currentPrediction, neuralNet, viewMode, xAxis, yAxis, zAxis, rotation, showModel]);
+            ctx.restore();
+        }
 
-    // VIEW MODE LABELS MAPPING
+    }, [data, currentInput, currentPrediction, neuralNet, viewMode, xAxis, yAxis, zAxis, rotation, showModel, scatterTransform]);
+
     const viewLabels = {
         'features': 'Alle Features',
         'scatter': '2D Plot',
@@ -665,15 +747,11 @@ export function SpamAdvancedCanvas({
 
     return (
         <div style={{ textAlign: 'center' }}>
-            {/* View Selector & Axis Controls */}
             {!hideControls && (
                 <div style={{ marginBottom: '10px', display: 'flex', gap: '5px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.9rem' }}>
-                    {/* Left: Additional Controls (e.g. Data Tab Toggle) */}
                     <div>
                         {additionalControls}
                     </div>
-
-                    {/* Right: Plot Controls */}
                     <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                         <select value={viewMode} onChange={e => setViewMode(e.target.value)} style={{ padding: '4px' }}>
                             {allowedModes.map(mode => (
@@ -710,7 +788,8 @@ export function SpamAdvancedCanvas({
                 ref={canvasRef}
                 width={600}
                 height={400}
-                style={{ border: '1px solid #eee', maxWidth: '100%', borderRadius: '4px', cursor: viewMode === '3d' ? 'grab' : 'default' }}
+                style={{ border: '1px solid #eee', maxWidth: '100%', borderRadius: '4px', cursor: hoverInfo ? 'pointer' : (viewMode === '3d' || viewMode === 'scatter' ? (isDragging.current ? 'grabbing' : 'grab') : 'default') }}
+                onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -720,7 +799,7 @@ export function SpamAdvancedCanvas({
 
             {!hideControls && (
                 <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
-                    {viewMode === '3d' ? 'Drag to rotate 3D view' : 'Wähle Achsen für die Visualisierung'}
+                    {viewMode === '3d' ? 'Drag to rotate 3D view' : (viewMode === 'scatter' ? 'Drag to Pan, Scroll to Zoom' : 'Wähle Achsen für die Visualisierung')}
                 </div>
             )}
         </div>
