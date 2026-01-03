@@ -320,11 +320,12 @@ export class ExhaustiveTrainer {
 
   // --- Adaptive Random Search Trainer ---
   // Starts with wide search radius, narrows down over time.
-  async trainRandomAsync(data, paramsConfig, onProgress) {
-    const MAX_STEPS = 10000;
-    const INITIAL_RADIUS_FACTOR = 0.5; // Start with searching 50% of the space
-    const DECAY = 0.992; // cay radius per step
-    const PHASE_1_RATIO = 0.1;
+  async trainRandomAsync(data, paramsConfig, onProgress, options = {}) {
+    const { patience = 5000 } = options;
+    const MAX_STEPS = 20000;
+    const INITIAL_RADIUS_FACTOR = 0.8; // Start with searching 50% of the space
+    const DECAY = 0.999; // decay radius per step
+    const PHASE_1_RATIO = 0.8;
     let minError = Infinity;
     let bestParams = {};
 
@@ -386,7 +387,9 @@ export class ExhaustiveTrainer {
 
     let currentRes = evaluate(currentParamsArr);
     minError = currentRes.mse;
-    bestParams = currentRes.decodedParams || { weights: currentRes.weights, bias: currentRes.bias, _array: [...currentParamsArr] };
+    bestParams = currentRes.decodedParams
+      ? { ...currentRes.decodedParams, _array: [...currentParamsArr] }
+      : { weights: currentRes.weights, bias: currentRes.bias, _array: [...currentParamsArr] };
 
     // Yield initial
     if (onProgress) onProgress([{ params: [...currentParamsArr], error: minError, mae: currentRes.mae }], { bestParams, minError });
@@ -400,6 +403,7 @@ export class ExhaustiveTrainer {
     // SA State
     let currentError = minError;
     let currentBestParamsArray = [...currentParamsArr]; // The 'walker' position
+    let stepsSinceLastImprovement = 0;
 
     for (let step = 0; step < MAX_STEPS; step++) {
       // Two-Stage Logic
@@ -416,7 +420,8 @@ export class ExhaustiveTrainer {
         // Normalize step within phase
         const progress = step / (MAX_STEPS * PHASE_1_RATIO);
         T = 0.2 * (1 - progress * 0.5); // 0.2 -> 0.1
-        radiusFactor = INITIAL_RADIUS_FACTOR * (1 - progress * 0.5); // 0.5 -> 0.25 (Keep it reasonably large)
+        radiusFactor = INITIAL_RADIUS_FACTOR * (1 - progress * 0.6); // 0.5 -> 0.25 (Keep it reasonably large)
+
       } else {
         // Refinement: Standard cooling
         const progress = (step - MAX_STEPS * PHASE_1_RATIO) / (MAX_STEPS * (1 - PHASE_1_RATIO));
@@ -441,15 +446,16 @@ export class ExhaustiveTrainer {
 
           // --- Phase 1 Only: Dynamic Boundary Extension ---
           if (isPhase1) {
-            const threshold = range.span * 0.15;
+            const threshold = range.span * 0.2;
+            const isBestVal = bestParams._array && Math.abs(val - bestParams._array[idx]) < 1e-9;
 
-            if (val < range.min + threshold) {
-              range.min -= range.span * 0.01;
-              //range.span = range.max - range.min;
+            if (isBestVal && val < range.min + threshold) {
+              range.min -= range.span * 0.3;
+              range.span = range.max - range.min;
               didExtend = true;
             }
-            if (val > range.max - threshold) {
-              range.max += range.span * 0.01;
+            if (isBestVal && val > range.max - threshold) {
+              range.max += range.span * 0.3;
               range.span = range.max - range.min;
               didExtend = true;
             }
@@ -501,6 +507,13 @@ export class ExhaustiveTrainer {
       if (res.mse < minError) {
         minError = res.mse;
         bestParams = { weights: res.weights, bias: res.bias, _array: [...candidateArr] };
+        stepsSinceLastImprovement = 0;
+      } else {
+        stepsSinceLastImprovement++;
+      }
+
+      if (stepsSinceLastImprovement >= patience && !isPhase1) {
+        break;
       }
 
       // Store history (User sees the Walker's attempts)
