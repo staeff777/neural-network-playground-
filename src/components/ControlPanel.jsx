@@ -1,5 +1,4 @@
 export function ControlPanel({
-
   onTrain,
   onRun,
   onReset,
@@ -23,6 +22,7 @@ export function ControlPanel({
           value={trainerType}
           onChange={e => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Trainingsmethode wählen"
           style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
         >
           <option value="exhaustive">Grid Search (Genau)</option>
@@ -32,6 +32,7 @@ export function ControlPanel({
           onClick={onTrain}
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
+          title={dataCount === 0 ? "Keine Trainingsdaten vorhanden" : "Training starten"}
         >
           {isTraining ? 'Suche läuft...' : '2. Trainieren'}
         </button>
