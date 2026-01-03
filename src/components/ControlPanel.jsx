@@ -25,8 +25,8 @@ export function ControlPanel({
           disabled={isTraining}
           style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
         >
-          <option value="exhaustive">Grid Search (Genau)</option>
-          <option value="random">Adaptive Random (Schnell)</option>
+          <option value="exhaustive">Grid Search </option>
+          <option value="random">Adaptive Random </option>
         </select>
         <button
           onClick={onTrain}

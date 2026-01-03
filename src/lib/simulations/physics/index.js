@@ -27,8 +27,10 @@ export const config = {
   },
 
   trainingConfig: {
-    weightRange: { min: 0, max: 60, step: 1 },
-    biasRange: { min: 0, max: 100, step: 2 }
+    params: [
+      { name: 'weight', min: 0, max: 60, step: 1 },
+      { name: 'bias', min: 0, max: 100, step: 2 }
+    ]
   },
 
   networkViz: {

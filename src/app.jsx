@@ -25,7 +25,7 @@ export function App() {
   const [isTraining, setIsTraining] = useState(false);
   const [activeTab, setActiveTab] = useState('simulation');
   const [dataViewMode, setDataViewMode] = useState('table'); // 'plot' or 'table'
-  const [trainerType, setTrainerType] = useState('exhaustive');
+  const [trainerType, setTrainerType] = useState('random');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
 
   // Ref for tracking time delta
