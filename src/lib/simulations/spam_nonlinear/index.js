@@ -7,10 +7,240 @@ export const FEATURES = [
     { label: "Links", idx: 1, max: 10 }
 ];
 
+
+const usePreparedData = true;
+const preparedData = [
+    {
+        "input": [367, 5],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+
+    {
+        "input": [365, 2],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [364, 6],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+
+    {
+        "input": [327, 7],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [302, 5],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [314, 3],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+
+    {
+        "input": [345, 4],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [265, 5],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [287, 4],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [311, 1],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [268, 2],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [283, 0],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+
+    {
+        "input": [261, 3],
+        "target": 0,
+        "text": "Attached is the quarterly report found at..."
+    },
+    {
+        "input": [197, 0],
+        "target": 0,
+        "text": "Just a normal short message."
+    },
+    {
+        "input": [150, 0],
+        "target": 0,
+        "text": "Just a normal short message."
+    },
+    {
+        "input": [124, 0],
+        "target": 0,
+        "text": "Just a normal short message."
+    },
+    {
+        "input": [65, 1],
+        "target": 0,
+        "text": "Just a normal short message."
+    },
+    {
+        "input": [85, 0],
+        "target": 0,
+        "text": "Just a normal short message."
+    },
+
+    {
+        "input": [58, 0],
+        "target": 0,
+        "text": "Just a normal short message."
+    },
+    {
+        "input": [45, 0],
+        "target": 0,
+        "text": "Security Alert: Login Code 2542"
+    },
+    {
+        "input": [36, 0],
+        "target": 0,
+        "text": "Security Alert: Login Code 5607"
+    },
+    {
+        "input": [38, 1],
+        "target": 0,
+        "text": "Security Alert: Login Code 909"
+    },
+    {
+        "input": [24, 1],
+        "target": 0,
+        "text": "Security Alert: Login Code 8385"
+    },
+    {
+        "input": [17, 1],
+        "target": 0,
+        "text": "Security Alert: Login Code 2083"
+    },
+
+
+
+
+
+
+    {
+        "input": [215, 1],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+
+    {
+        "input": [230, 3],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [234, 5],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [221, 2],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [215, 4],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [153, 3],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [152, 1],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [137, 2],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [124, 4],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [120, 2],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [92, 3],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+    {
+        "input": [93, 5],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+
+    {
+        "input": [86, 5],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+
+    {
+        "input": [84, 3],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+
+    {
+        "input": [53, 4],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+
+
+
+    {
+        "input": [55, 3],
+        "target": 1,
+        "text": "You won a prize! Click here."
+    },
+
+];
+
+
 // Nonlinear Data Generator
 export const generateNonlinearData = () => {
-    const data = [];
+    let data = [];
     const count = 40;
+
+    if (usePreparedData) {
+        console.log("Using prepared data with length " + preparedData.length);
+        return preparedData;
+    }
 
     // Helper to add jitter
     const jitter = (val, mag = 0.5) => val + (Math.random() - 0.5) * mag;
@@ -59,6 +289,8 @@ export const generateNonlinearData = () => {
             target,
             text
         });
+
+
     }
 
     console.log("Generated Data Export:");
@@ -84,10 +316,9 @@ export const config = {
     // Not really used for generation anymore since we have a custom generator, 
     // but useful for "predict" calls if the canvas asks for "getInput(time)"
     getInput: (time) => {
-        return {
-            input: [50, 0],
-            text: "Live Input"
-        };
+        const features = [50, 0];
+        features.text = "Live Input";
+        return features;
     },
 
     generateData: (groundTruth) => {

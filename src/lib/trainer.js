@@ -374,7 +374,7 @@ export class ExhaustiveTrainer {
   async trainRandomAsync(data, paramsConfig, onProgress, options = {}) {
     const { patience = 5000, seed } = options;
     const MAX_STEPS = 20000;
-    const INITIAL_RADIUS_FACTOR = 0.8; // Start with searching 50% of the space
+    const INITIAL_RADIUS_FACTOR = 0.5; // Start with searching 50% of the space
     const DECAY = 0.999; // decay radius per step
     const PHASE_1_RATIO = 0.8;
     let minError = Infinity;

@@ -212,9 +212,24 @@ export function App() {
   const handleReset = () => {
     setIsRunning(false);
     setTime(0);
-    setTrainingData([]);
     setTrainingHistory([]);
     setTrainingStepIndex(-1);
+
+    // Regenerate Data
+    if (simConfig && simConfig.generateData && groundTruth.current) {
+      try {
+        const data = simConfig.generateData(groundTruth.current);
+        setTrainingData(data);
+        setStatusMsg('Reset durchgeführt & Daten neu generiert.');
+      } catch (e) {
+        console.error("Regenerate Data Error:", e);
+        setTrainingData([]);
+      }
+    } else {
+      setTrainingData([]);
+      setStatusMsg('Reset durchgeführt.');
+    }
+
     try {
       if (neuralNet.current && simConfig?.defaultParams) {
         if (simConfig.defaultParams.weight !== undefined) neuralNet.current.setWeight(simConfig.defaultParams.weight);
@@ -224,7 +239,6 @@ export function App() {
     } catch (e) {
       console.error("Reset Error:", e);
     }
-    setStatusMsg('Reset durchgeführt.');
   };
 
   if (!simConfig) return <div>Lade Simulation...</div>;

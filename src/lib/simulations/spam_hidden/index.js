@@ -10,11 +10,11 @@ const generateParamsConfig = () => {
     // Layer 1: 10 neurons
     for (let j = 0; j < 10; j++) {
         // Bias
-        params.push({ name: `b1_${j}`, min: -3, max: 3, step: 1.0 });
+        params.push({ name: `b1_${j}`, min: -30, max: 30, step: 1.0 });
 
         // Weights (2 inputs)
         for (let i = 0; i < 2; i++) {
-            params.push({ name: `w1_${j}_${i}`, min: -3, max: 3, step: 1.0 });
+            params.push({ name: `w1_${j}_${i}`, min: -30, max: 30, step: 1.0 });
         }
     }
 
@@ -24,11 +24,13 @@ const generateParamsConfig = () => {
 
     // Weights (10 hidden inputs)
     for (let j = 0; j < 10; j++) {
-        params.push({ name: `w2_${j}`, min: -5, max: 5, step: 1.0 });
+        params.push({ name: `w2_${j}`, min: -50, max: 50, step: 1.0 });
     }
 
     return params;
 };
+
+// seeds: 536112786
 
 export const config = {
     id: 'spam_hidden',

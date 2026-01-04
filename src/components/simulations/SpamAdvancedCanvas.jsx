@@ -172,6 +172,18 @@ export function SpamAdvancedCanvas({
             return max > 0 ? max : features[idx].max;
         };
 
+        const getColor = (target) => {
+            if (target === 2) return '#3498db'; // Blue (New Class)
+            if (target === 1) return '#e74c3c'; // Red (Spam)
+            return '#2ecc71'; // Green (Ham)
+        };
+
+        const getLabel = (target) => {
+            if (target === 3) return 'CLASS 3';
+            if (target === 1) return 'SPAM';
+            return 'HAM';
+        };
+
         // --- 3D PLOT MODE ---
         if (viewMode === '3d') {
             const xMax = getDataMax(xAxis);
@@ -293,7 +305,7 @@ export function SpamAdvancedCanvas({
 
                     pointsToDraw.push({
                         ...proj,
-                        color: pt.target === 1 ? '#e74c3c' : '#2ecc71',
+                        color: getColor(pt.target),
                         radius: 3,
                         haloColor,
                         pt // Keep ref
@@ -311,6 +323,7 @@ export function SpamAdvancedCanvas({
                         info: {
                             x: p.x, y: p.y,
                             text: p.pt.text,
+                            target: p.pt.target,
                             isSpam: p.pt.target === 1,
                             features: {
                                 xLabel: features[xAxis].label,
@@ -530,6 +543,7 @@ export function SpamAdvancedCanvas({
                         info: {
                             x, y,
                             text: pt.text,
+                            target: pt.target,
                             isSpam: pt.target === 1,
                             features: {
                                 xLabel: features[xAxis].label,
@@ -547,7 +561,7 @@ export function SpamAdvancedCanvas({
                             haloColor = pred > 0.5 ? '#e74c3c' : '#2ecc71';
                         } catch (e) { }
                     }
-                    drawPoint(pt.input, pt.target === 1 ? '#e74c3c' : '#2ecc71', 5, '#fff', haloColor);
+                    drawPoint(pt.input, getColor(pt.target), 5, '#fff', haloColor);
                 });
             }
 
@@ -695,6 +709,7 @@ export function SpamAdvancedCanvas({
                             info: {
                                 x: px, y: py,
                                 text: pt.text,
+                                target: pt.target,
                                 isSpam: pt.target === 1,
                                 features: {
                                     valLabel: plot.label,
@@ -721,8 +736,11 @@ export function SpamAdvancedCanvas({
 
                         ctx.beginPath();
                         ctx.arc(px, py, 3, 0, 2 * Math.PI);
-                        ctx.fillStyle = pt.target ? 'rgba(231, 76, 60, 0.6)' : 'rgba(46, 204, 113, 0.6)';
+                        // Use hexToRgba logic or just simple opacity check if needed, but let's stick to simple
+                        ctx.fillStyle = getColor(pt.target);
+                        ctx.globalAlpha = 0.6;
                         ctx.fill();
+                        ctx.globalAlpha = 1.0;
                     });
                 }
 
@@ -747,7 +765,7 @@ export function SpamAdvancedCanvas({
             ctx.strokeStyle = '#fff';
 
             const text = hoverInfo.text || "No Text";
-            const label = hoverInfo.isSpam ? "SPAM" : "HAM";
+            const label = getLabel(hoverInfo.target !== undefined ? hoverInfo.target : (hoverInfo.isSpam ? 1 : 0));
             const metrics = ctx.measureText(text);
 
             const tw = Math.max(metrics.width, 140) + 20;
@@ -777,7 +795,7 @@ export function SpamAdvancedCanvas({
             ctx.textAlign = 'left';
 
             ctx.font = 'bold 12px sans-serif';
-            ctx.fillStyle = hoverInfo.isSpam ? '#e74c3c' : '#2ecc71';
+            ctx.fillStyle = getColor(hoverInfo.target !== undefined ? hoverInfo.target : (hoverInfo.isSpam ? 1 : 0));
             ctx.fillText(label, tx + 10, ty + 10);
 
             ctx.fillStyle = '#ddd';
