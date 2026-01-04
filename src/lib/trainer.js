@@ -372,11 +372,18 @@ export class ExhaustiveTrainer {
   // --- Adaptive Random Search Trainer ---
   // Starts with wide search radius, narrows down over time.
   async trainRandomAsync(data, paramsConfig, onProgress, options = {}) {
-    const { patience = 5000, seed } = options;
-    const MAX_STEPS = 20000;
-    const INITIAL_RADIUS_FACTOR = 0.5; // Start with searching 50% of the space
+    const {
+      patience = 5000,
+      seed,
+      maxSteps = 10000,
+      initialRadius = 0.8,
+      phase1Ratio = 0.8
+    } = options;
+
+    const MAX_STEPS = maxSteps;
+    const INITIAL_RADIUS_FACTOR = initialRadius; // Start with searching 50% of the space
     const DECAY = 0.999; // decay radius per step
-    const PHASE_1_RATIO = 0.8;
+    const PHASE_1_RATIO = phase1Ratio;
     let minError = Infinity;
     let bestParams = {};
 

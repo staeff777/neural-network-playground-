@@ -186,7 +186,10 @@ export function App() {
         // Adaptive Random Trainer
         setStatusMsg('Suche optimales Gewicht und Bias (Random Search)...');
         const trainOptions = {
-          seed: simConfig.trainingConfig.seed
+          seed: simConfig.trainingConfig.seed,
+          maxSteps: simConfig.trainingConfig.maxSteps,
+          initialRadius: simConfig.trainingConfig.initialRadius,
+          phase1Ratio: simConfig.trainingConfig.phase1Ratio
         };
         result = await trainer.trainRandomAsync(trainingData, simConfig.trainingConfig.params, handleProgress, trainOptions);
       } else if (simConfig.trainingConfig.params) {

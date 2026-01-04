@@ -57,7 +57,7 @@ export const config = {
     },
 
     trainingConfig: {
-        seed: 1041971602,
+        seed: 1319434789,
         params: generateParamsConfig()
     },
 
