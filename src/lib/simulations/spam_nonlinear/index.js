@@ -21,7 +21,7 @@ export const generateNonlinearData = () => {
 
         // 10% Short/Safe (Alerts, OTPs) - Words < 50, Links low -> Ham
         if (rand < 0.1) {
-            const words = Math.max(0, 10 + Math.random() * 40); // 10-50 words
+            const words = Math.floor(Math.max(0, 10 + Math.random() * 40)); // 10-50 words
             const links = Math.floor(Math.random() * 2); // 0 or 1 link
             input = [words, links];
             target = 0; // HAM
@@ -29,7 +29,7 @@ export const generateNonlinearData = () => {
         }
         // 50% Possible Spam - Words 50-250
         else if (rand < 0.6) {
-            const words = 50 + Math.random() * 200; // 50-250 words
+            const words = Math.floor(50 + Math.random() * 200); // 50-250 words
             // If links > 0 -> Spam, else Ham
             // But we want it mostly spam for this region if they have links?
             // "possible spam with low to medium links. no links: no spam"
@@ -51,8 +51,8 @@ export const generateNonlinearData = () => {
         }
 
         // Add some noise to inputs for distinctness
-        input[0] = Math.max(0, jitter(input[0], 5));
-        input[1] = Math.max(0, jitter(input[1], 0.2));
+        input[0] = Math.max(0, Math.floor(input[0]));
+        input[1] = Math.max(0, Math.floor(input[1]));
 
         data.push({
             input,
@@ -60,6 +60,9 @@ export const generateNonlinearData = () => {
             text
         });
     }
+
+    console.log("Generated Data Export:");
+    console.log(JSON.stringify(data, null, 2));
 
     return data;
 };

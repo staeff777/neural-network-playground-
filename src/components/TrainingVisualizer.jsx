@@ -85,7 +85,8 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
             yMode: 'accuracy',
             getValue: (h, idx) => idx,
             getYValue: (h) => h.accuracy || 0,
-            offsetX, offsetY, w: chartW, h: chartH
+            offsetX, offsetY, w: chartW, h: chartH,
+            showYAxis: true
           });
 
         } else if (i === 1) {
@@ -99,7 +100,8 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
             yMode: 'error_log',
             getValue: (h, idx) => idx,
             getYValue: (h) => h.error,
-            offsetX, offsetY, w: chartW, h: chartH
+            offsetX, offsetY, w: chartW, h: chartH,
+            showYAxis: true
           });
 
         } else {
@@ -139,12 +141,12 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         {
           type: 'accuracy_step', xLabel: 'Accuracy', xMin: 0, xMax: xMaxStep,
           yMode: 'accuracy', getValue: (h, idx) => idx, getYValue: (h) => h.accuracy || 0,
-          offsetX: 0, offsetY: 0, w: chartW, h: chartH
+          offsetX: 0, offsetY: 0, w: chartW, h: chartH, showYAxis: true
         },
         {
           type: 'error_step', xLabel: 'Step', xMin: 0, xMax: xMaxStep,
           yMode: 'error_log', getValue: (h, idx) => idx, getYValue: (h) => h.error,
-          offsetX: chartW, offsetY: 0, w: chartW, h: chartH
+          offsetX: chartW, offsetY: 0, w: chartW, h: chartH, showYAxis: true
         },
         {
           xLabel: 'Weight', xMin: Math.min(...valuesW), xMax: Math.max(...valuesW),
@@ -160,10 +162,10 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
     }
 
     // --- DRAWING LOOP ---
-    const padding = 35;
+    const padding = 50; // Increased padding for larger fonts
 
     charts.forEach(chart => {
-      const { xLabel, xMin, xMax, getValue, getYValue, offsetX, offsetY, w, h, yMode } = chart;
+      const { xLabel, xMin, xMax, getValue, getYValue, offsetX, offsetY, w, h, yMode, showYAxis } = chart;
       const mapX = (v) => offsetX + padding + (v - xMin) / ((xMax - xMin) || 1) * (w - 2 * padding);
 
       // Define MapY based on Mode
@@ -186,12 +188,13 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
       // Chart Area Box
       ctx.strokeStyle = '#eee';
+      ctx.lineWidth = 2; // Thicker lines
       ctx.strokeRect(offsetX, offsetY, w, h);
 
       // Axes
       ctx.beginPath();
       ctx.strokeStyle = '#333';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2; // Thicker axes
       // Y Axis
       ctx.moveTo(offsetX + padding, offsetY + padding);
       ctx.lineTo(offsetX + padding, offsetY + h - padding);
@@ -201,72 +204,77 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
       // Labels
       ctx.fillStyle = '#333';
-      ctx.font = '11px sans-serif';
+      ctx.font = '22px sans-serif'; // Larger font
       ctx.textAlign = 'center';
 
       // Truncate overly long labels
       let label = xLabel;
       if (label.length > 20) label = label.substring(0, 18) + '...';
 
-      ctx.fillText(label, offsetX + w / 2, offsetY + h - 10);
+      ctx.fillText(label, offsetX + w / 2, offsetY + h - 15);
 
       // --- Y-AXIS TICKS & TITLE ---
-      ctx.save();
-      ctx.translate(offsetX + 10, offsetY + h / 2);
-      ctx.rotate(-Math.PI / 2);
+      // Draw if leftmost OR explicitly requested
+      if (offsetX === 0 || showYAxis) {
+        ctx.save();
+        ctx.translate(offsetX + 15, offsetY + h / 2); // Adjusted offset
+        ctx.rotate(-Math.PI / 2);
 
-      if (yMode === 'accuracy') {
-        ctx.fillText("Accuracy", 0, 0);
-        ctx.restore();
+        if (yMode === 'accuracy') {
+          ctx.fillText("Accuracy", 0, 0);
+          ctx.restore();
 
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#666';
-        ctx.font = '9px sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#666';
+          ctx.font = '18px sans-serif'; // Larger font
 
-        // 0, 0.5, 1.0 ticks
-        [0, 0.25, 0.5, 0.75, 1.0].forEach(v => {
-          const y = mapY(v);
-          ctx.fillText(v.toFixed(2), offsetX + padding - 5, y + 3);
-          // Grid
-          ctx.beginPath();
-          ctx.strokeStyle = '#f0f0f0';
-          ctx.moveTo(offsetX + padding, y);
-          ctx.lineTo(offsetX + w - padding, y);
-          ctx.stroke();
-        });
-      } else {
-        // Error (Linear)
-        ctx.fillText("Error", 0, 0);
-        ctx.restore();
-
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#666';
-        ctx.font = '9px sans-serif';
-
-        // 5 Linear ticks
-        const steps = 5;
-        for (let i = 0; i <= steps; i++) {
-          const val = (i / steps) * maxError;
-          const y = mapY(val);
-
-          ctx.fillText(val.toFixed(2), offsetX + padding - 5, y + 3);
-
-          if (i > 0) { // Don't draw bottom line over axis
+          // 0, 0.25, 0.5, 0.75, 1.0 ticks
+          [0, 0.25, 0.5, 0.75, 1.0].forEach(v => {
+            const y = mapY(v);
+            ctx.fillText(v.toFixed(2), offsetX + padding - 8, y + 6);
+            // Grid
             ctx.beginPath();
+            ctx.lineWidth = 1;
             ctx.strokeStyle = '#f0f0f0';
             ctx.moveTo(offsetX + padding, y);
             ctx.lineTo(offsetX + w - padding, y);
             ctx.stroke();
+          });
+        } else {
+          // Error (Linear)
+          ctx.fillText("Error", 0, 0);
+          ctx.restore();
+
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#666';
+          ctx.font = '18px sans-serif'; // Larger font
+
+          // 5 Linear ticks
+          const steps = 5;
+          for (let i = 0; i <= steps; i++) {
+            const val = (i / steps) * maxError;
+            const y = mapY(val);
+
+            ctx.fillText(val.toFixed(2), offsetX + padding - 8, y + 6);
+
+            if (i > 0) { // Don't draw bottom line over axis
+              ctx.beginPath();
+              ctx.lineWidth = 1;
+              ctx.strokeStyle = '#f0f0f0';
+              ctx.moveTo(offsetX + padding, y);
+              ctx.lineTo(offsetX + w - padding, y);
+              ctx.stroke();
+            }
           }
         }
       }
 
       // X Ticks
       ctx.fillStyle = '#666';
-      ctx.font = '9px sans-serif';
+      ctx.font = '18px sans-serif'; // Larger font
       ctx.textAlign = 'center';
-      ctx.fillText(xMin.toFixed(1), offsetX + padding, offsetY + h - padding + 12);
-      ctx.fillText(xMax.toFixed(1), offsetX + w - padding, offsetY + h - padding + 12);
+      ctx.fillText(xMin.toFixed(1), offsetX + padding, offsetY + h - padding + 25);
+      ctx.fillText(xMax.toFixed(1), offsetX + w - padding, offsetY + h - padding + 25);
 
       // Plot Points
       ctx.fillStyle = yMode === 'accuracy' ? 'rgba(155, 89, 182, 0.4)' : 'rgba(52, 152, 219, 0.4)'; // Purple for Acc, Blue for Error
@@ -275,7 +283,7 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         const yVal = getYValue(history[i]);
         const x = mapX(val);
         const y = mapY(yVal);
-        ctx.fillRect(x, y, 2, 2);
+        ctx.fillRect(x, y, 4, 4); // Larger points
       }
 
       // Highlight Best
@@ -288,7 +296,8 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         ctx.beginPath();
         ctx.fillStyle = '#2ecc71'; // Green
         ctx.strokeStyle = '#27ae60';
-        ctx.arc(bx, by, 6, 0, Math.PI * 2);
+        ctx.lineWidth = 2; // Thicker line
+        ctx.arc(bx, by, 10, 0, Math.PI * 2); // Larger radius
         ctx.fill();
         ctx.stroke();
       }
@@ -303,45 +312,47 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         ctx.beginPath();
         ctx.fillStyle = '#e74c3c'; // Red
         ctx.strokeStyle = '#c0392b';
-        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.lineWidth = 2; // Thicker line
+        ctx.arc(cx, cy, 8, 0, Math.PI * 2); // Larger radius
         ctx.fill();
         ctx.stroke();
       }
     });
 
     // Legend overlay (Top Right of total canvas)
-    const legendX = width - 120;
-    const legendY = 10;
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.fillRect(legendX, legendY, 110, 50);
+    const legendX = width - 150; // Adjusted for font size
+    const legendY = 20;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillRect(legendX, legendY, 140, 70); // Larger box
     ctx.strokeStyle = '#ccc';
-    ctx.strokeRect(legendX, legendY, 110, 50);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(legendX, legendY, 140, 70);
 
     ctx.textAlign = 'left';
-    ctx.font = '10px sans-serif';
+    ctx.font = '16px sans-serif'; // Larger font
 
     // Red Dot
     ctx.beginPath();
     ctx.fillStyle = '#e74c3c';
-    ctx.arc(legendX + 10, legendY + 15, 4, 0, Math.PI * 2);
+    ctx.arc(legendX + 15, legendY + 20, 6, 0, Math.PI * 2); // Larger dot
     ctx.fill();
     ctx.fillStyle = '#333';
-    ctx.fillText("Current Scan", legendX + 20, legendY + 18);
+    ctx.fillText("Current Scan", legendX + 30, legendY + 25);
 
     // Green Dot
     ctx.beginPath();
     ctx.fillStyle = '#2ecc71';
-    ctx.arc(legendX + 10, legendY + 35, 4, 0, Math.PI * 2);
+    ctx.arc(legendX + 15, legendY + 50, 6, 0, Math.PI * 2); // Larger dot
     ctx.fill();
     ctx.fillStyle = '#333';
-    ctx.fillText("Best So Far", legendX + 20, legendY + 38);
+    ctx.fillText("Best So Far", legendX + 30, legendY + 55);
 
     // Final Error Display
     if (!isTraining && bestIdx >= 0) {
       ctx.fillStyle = '#333';
-      ctx.font = 'bold 12px sans-serif';
+      ctx.font = 'bold 18px sans-serif'; // Larger font
       ctx.textAlign = 'right';
-      ctx.fillText(`Min Error: ${minErr.toFixed(5)}`, width - 10, height - 10);
+      ctx.fillText(`Min Error: ${minErr.toFixed(5)}`, width - 20, height - 20);
     }
 
   }, [history, currentStepIndex, isTraining, paramsConfig, page]);
@@ -352,8 +363,8 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff' }}>
       <canvas
         ref={canvasRef}
-        width={800}
-        height={400}
+        width={1600}
+        height={800}
         style={{ width: '100%', height: 'auto' }}
       />
       {totalPages > 1 && (

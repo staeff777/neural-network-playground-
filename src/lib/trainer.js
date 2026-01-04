@@ -83,6 +83,18 @@ export class ExhaustiveTrainer {
         const mse = errorSum / data.length;
         const mae = absDiffSum / data.length;
 
+        // Approx accuracy
+        let correctCount = 0;
+        for (const point of data) {
+          const p = this.model.predict(point.input);
+          const cls = p >= 0.5 ? 1 : 0;
+          // If target is probability (0 or 1), round it too?
+          // Target is usually 0 OR 1.
+          if (cls === point.target) correctCount++;
+        }
+        const accuracy = correctCount / data.length;
+
+
         if (mse < minError) {
           minError = mse;
           // Store deep copy
@@ -91,7 +103,7 @@ export class ExhaustiveTrainer {
 
         // History might be too large for multi-dim, only store if needed or sample?
         // For 500 points it's fine.        
-        history.push({ params: [...currentParams], error: mse, mae });
+        history.push({ params: [...currentParams], error: mse, mae, accuracy });
         return;
       }
 
@@ -135,13 +147,23 @@ export class ExhaustiveTrainer {
         const mse = errorSum / data.length;
         const mae = absDiffSum / data.length;
 
+        // Approx accuracy
+        let correctCount = 0;
+        for (const point of data) {
+          const p = this.model.predict(point.input);
+          const cls = p >= 0.5 ? 1 : 0;
+          if (cls === point.target) correctCount++;
+        }
+        const accuracy = correctCount / data.length;
+
+
         if (mse < minError) {
           minError = mse;
           bestWeight = cw;
           bestBias = cb;
         }
 
-        history.push({ weight: cw, bias: cb, error: mse, mae });
+        history.push({ weight: cw, bias: cb, error: mse, mae, accuracy });
       }
     }
 
@@ -187,13 +209,22 @@ export class ExhaustiveTrainer {
           const mse = errorSum / data.length;
           const mae = absDiffSum / data.length;
 
+          // Approx Accuracy
+          let correctCount = 0;
+          for (const point of data) {
+            const p = this.model.predict(point.input);
+            const cls = p >= 0.5 ? 1 : 0;
+            if (cls === point.target) correctCount++;
+          }
+          const accuracy = correctCount / data.length;
+
           if (mse < minError) {
             minError = mse;
             bestWeight = cw;
             bestBias = cb;
           }
 
-          const resultPoint = { weight: cw, bias: cb, error: mse, mae };
+          const resultPoint = { weight: cw, bias: cb, error: mse, mae, accuracy };
           chunk.push(resultPoint);
           operations++;
 
@@ -282,13 +313,23 @@ export class ExhaustiveTrainer {
         const mse = errorSum / data.length;
         const mae = absDiffSum / data.length;
 
+        // Approx Accuracy
+        let correctCount = 0;
+        for (const point of data) {
+          const p = this.model.predict(point.input);
+          const cls = p >= 0.5 ? 1 : 0;
+          if (cls === point.target) correctCount++;
+        }
+        const accuracy = correctCount / data.length;
+
+
         if (mse < minError) {
           minError = mse;
           bestParams = decodedParams;
         }
 
         // Store
-        const point = { params: [...currentParams], error: mse, mae };
+        const point = { params: [...currentParams], error: mse, mae, accuracy };
         chunk.push(point);
         operations++;
 
@@ -325,7 +366,7 @@ export class ExhaustiveTrainer {
     const MAX_STEPS = 20000;
     const INITIAL_RADIUS_FACTOR = 0.8; // Start with searching 50% of the space
     const DECAY = 0.999; // decay radius per step
-    const PHASE_1_RATIO = 0.5;
+    const PHASE_1_RATIO = 0.8;
     let minError = Infinity;
     let bestParams = {};
 
@@ -382,7 +423,20 @@ export class ExhaustiveTrainer {
         errorSum += diff * diff;
         absDiffSum += Math.abs(diff);
       }
-      return { mse: errorSum / data.length, mae: absDiffSum / data.length, decodedParams, weights, bias };
+      let correctAcc = 0;
+
+      // Re-loop for accuracy because we need fresh predictions? 
+      // Actually we computed them in loop... but we didn't store.
+      // Optimization: merge loops?
+      // model.predict is fast for this toy app.
+      for (const point of data) {
+        const p = this.model.predict(point.input);
+        const cls = p >= 0.5 ? 1 : 0;
+        if (cls === point.target) correctAcc++;
+      }
+      const acc = correctAcc / data.length;
+
+      return { mse: errorSum / data.length, mae: absDiffSum / data.length, accuracy: acc, decodedParams, weights, bias };
     };
 
     let currentRes = evaluate(currentParamsArr);
@@ -392,7 +446,7 @@ export class ExhaustiveTrainer {
       : { weights: currentRes.weights, bias: currentRes.bias, _array: [...currentParamsArr] };
 
     // Yield initial
-    if (onProgress) onProgress([{ params: [...currentParamsArr], error: minError, mae: currentRes.mae }], { bestParams, minError });
+    if (onProgress) onProgress([{ params: [...currentParamsArr], error: minError, mae: currentRes.mae, accuracy: currentRes.accuracy }], { bestParams, minError });
     await new Promise(r => setTimeout(r, 0));
 
 
@@ -517,7 +571,7 @@ export class ExhaustiveTrainer {
       }
 
       // Store history (User sees the Walker's attempts)
-      chunk.push({ params: [...candidateArr], error: res.mse, mae: res.mae });
+      chunk.push({ params: [...candidateArr], error: res.mse, mae: res.mae, accuracy: res.accuracy });
 
       // Yield
       if (chunk.length >= CHUNK_SIZE) {
