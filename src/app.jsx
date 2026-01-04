@@ -135,7 +135,13 @@ export function App() {
       setStatusMsg('Suche optimales Gewicht und Bias (Live Visualisierung)...');
       setActiveTab('training');
 
-      const trainer = new ExhaustiveTrainer(neuralNet.current);
+      // Issue: The Trainer mutates the model thousands of times per second (scratchpad).
+      // If we pass the same model instance (neuralNet.current) that the UI is rendering,
+      // the UI will display random "test" weights (noise) instead of the "best" weights.
+      // Fix: Use a separate model instance for the heavy lifting, and only update the UI model
+      // when we actually find a better result (via handleProgress).
+      const trainingModel = new simConfig.Model();
+      const trainer = new ExhaustiveTrainer(trainingModel);
 
       // Progress Callback
       const handleProgress = (newChunk, bestSoFar) => {
@@ -179,7 +185,10 @@ export function App() {
       if (trainerType === 'random') {
         // Adaptive Random Trainer
         setStatusMsg('Suche optimales Gewicht und Bias (Random Search)...');
-        result = await trainer.trainRandomAsync(trainingData, simConfig.trainingConfig.params, handleProgress);
+        const trainOptions = {
+          seed: simConfig.trainingConfig.seed
+        };
+        result = await trainer.trainRandomAsync(trainingData, simConfig.trainingConfig.params, handleProgress, trainOptions);
       } else if (simConfig.trainingConfig.params) {
         // Generic Trainer
         result = await trainer.trainAsync(trainingData, simConfig.trainingConfig.params, handleProgress);

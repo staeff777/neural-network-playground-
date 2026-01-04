@@ -30,7 +30,7 @@ const generateParamsConfig = () => {
     return params;
 };
 
-// seeds: 536112786
+// seeds: 536112786 with: 
 
 export const config = {
     id: 'spam_hidden',
@@ -57,6 +57,7 @@ export const config = {
     },
 
     trainingConfig: {
+        seed: 1041971602,
         params: generateParamsConfig()
     },
 

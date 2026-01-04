@@ -581,7 +581,9 @@ export class ExhaustiveTrainer {
       // Update Global Best separately
       if (res.mse < minError) {
         minError = res.mse;
-        bestParams = { weights: res.weights, bias: res.bias, _array: [...candidateArr] };
+        bestParams = res.decodedParams
+          ? { ...res.decodedParams, _array: [...candidateArr] }
+          : { weights: res.weights, bias: res.bias, _array: [...candidateArr] };
         stepsSinceLastImprovement = 0;
       } else {
         stepsSinceLastImprovement++;
