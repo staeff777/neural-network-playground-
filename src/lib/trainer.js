@@ -1,3 +1,13 @@
+// Simple seeded random number generator (Mulberry32)
+function mulberry32(a) {
+  return function () {
+    var t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
 export class ExhaustiveTrainer {
   constructor(model) {
     this.model = model;
@@ -362,13 +372,24 @@ export class ExhaustiveTrainer {
   // --- Adaptive Random Search Trainer ---
   // Starts with wide search radius, narrows down over time.
   async trainRandomAsync(data, paramsConfig, onProgress, options = {}) {
-    const { patience = 5000 } = options;
+    const { patience = 5000, seed } = options;
     const MAX_STEPS = 20000;
     const INITIAL_RADIUS_FACTOR = 0.8; // Start with searching 50% of the space
     const DECAY = 0.999; // decay radius per step
     const PHASE_1_RATIO = 0.8;
     let minError = Infinity;
     let bestParams = {};
+
+    // 0. Setup Random Generator
+    let currentSeed = seed;
+    if (currentSeed === undefined || currentSeed === null) {
+      currentSeed = Math.floor(Math.random() * 2147483647);
+      console.log(`[AdaptiveRandom] Generated Seed: ${currentSeed}`);
+    } else {
+      console.log(`[AdaptiveRandom] Using Seed: ${currentSeed}`);
+    }
+    const random = mulberry32(currentSeed);
+
 
     // 0. Initialize Dynamic Ranges
     // We clone the config ranges so we can expand them if needed.
@@ -380,7 +401,7 @@ export class ExhaustiveTrainer {
 
     // 1. Initialize random starting point
     let currentParamsArr = dynamicRanges.map(c => {
-      return c.min + Math.random() * c.span;
+      return c.min + random() * c.span;
     });
 
     // Evaluate Initial
@@ -491,7 +512,7 @@ export class ExhaustiveTrainer {
       let mutated = false;
       while (!mutated) {
         candidateArr.forEach((val, idx) => {
-          if (Math.random() < 0.4) return; // 60% chance to mutate each (high flux) or tunable
+          if (random() < 0.4) return; // 60% chance to mutate each (high flux) or tunable
 
           mutated = true;
           const range = dynamicRanges[idx];
@@ -525,7 +546,7 @@ export class ExhaustiveTrainer {
           }
 
           const r = effectiveRadius;
-          let newVal = val + (Math.random() - 0.5) * 2 * r;
+          let newVal = val + (random() - 0.5) * 2 * r;
 
           if (newVal < range.min) newVal = range.min;
           if (newVal > range.max) newVal = range.max;
@@ -549,7 +570,7 @@ export class ExhaustiveTrainer {
       } else {
         // Accept with probability even if worse
         const prob = Math.exp(-diff / (T + 1e-9));
-        //if (Math.random() < prob) accept = true;
+        //if (random() < prob) accept = true;
       }
 
       if (accept) {
