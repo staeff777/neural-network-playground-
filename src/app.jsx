@@ -7,6 +7,14 @@ import { SpamHiddenPhase } from './components/phases/Phase5_SpamHidden';
 import { ArchitectureGallery } from './components/debug/ArchitectureGallery';
 import './app.css';
 
+const PHASES = [
+  { id: 'physics', label: 'Phase 1 (Physik)' },
+  { id: 'spam', label: 'Phase 2 (Spam)' },
+  { id: 'spam_advanced', label: 'Phase 3 (Spam Extended)' },
+  { id: 'spam_nonlinear', label: 'Phase 4 (Nonlinear)' },
+  { id: 'spam_hidden', label: 'Phase 5 (Deep)' }
+];
+
 export function App() {
   const [simId, setSimId] = useState(null);
 
@@ -16,7 +24,7 @@ export function App() {
     setSimId(id);
   }, []);
 
-  if (!simId) return <div>Lade App...</div>;
+  if (!simId) return <div role="status">Lade App...</div>;
 
   if (simId === 'gallery') {
     return (
@@ -24,9 +32,9 @@ export function App() {
         <header>
           <h1>Neural Network Demonstrator</h1>
           <p>Architecture Gallery (Debug)</p>
-          <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+          <nav className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
             <a href="?sim=physics" style={{ marginRight: '10px' }}>Back to App</a>
-          </div>
+          </nav>
         </header>
         <main>
           <ArchitectureGallery />
@@ -34,11 +42,6 @@ export function App() {
       </div>
     );
   }
-
-  // Common Header for Phases
-  // Note: simConfig title was used in original header. Use a map or dynamic title?
-  // Since we don't have simConfig here (it's in the Phase), we can just use the generic header or pass title.
-  // Actually, original App had global navigation. Let's keep it.
 
   const getValidationTitle = (id) => {
     switch (id) {
@@ -56,13 +59,26 @@ export function App() {
       <header>
         <h1>Neural Network Demonstrator</h1>
         <p>{getValidationTitle(simId)}</p>
-        <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-          <a href="?sim=physics" style={{ marginRight: '10px', fontWeight: simId === 'physics' ? 'bold' : 'normal' }}>Phase 1 (Physik)</a>
-          <a href="?sim=spam" style={{ marginRight: '10px', fontWeight: simId === 'spam' ? 'bold' : 'normal' }}>Phase 2 (Spam)</a>
-          <a href="?sim=spam_advanced" style={{ marginRight: '10px', fontWeight: simId === 'spam_advanced' ? 'bold' : 'normal' }}>Phase 3 (Spam Extended)</a>
-          <a href="?sim=spam_nonlinear" style={{ marginRight: '10px', fontWeight: simId === 'spam_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear)</a>
-          <a href="?sim=spam_hidden" style={{ fontWeight: simId === 'spam_hidden' ? 'bold' : 'normal' }}>Phase 5 (Deep)</a>
-        </div>
+        <nav
+          className="sim-selector"
+          aria-label="Phasen-Auswahl"
+          style={{ fontSize: '0.8rem', marginTop: '5px' }}
+        >
+          {PHASES.map(phase => (
+            <a
+              key={phase.id}
+              href={`?sim=${phase.id}`}
+              style={{
+                marginRight: '10px',
+                fontWeight: simId === phase.id ? 'bold' : 'normal',
+                textDecoration: simId === phase.id ? 'underline' : 'none'
+              }}
+              aria-current={simId === phase.id ? 'page' : undefined}
+            >
+              {phase.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <main style={{ height: '100%' }}>
