@@ -1,5 +1,4 @@
 export function ControlPanel({
-
   onTrain,
   onRun,
   onReset,
@@ -20,6 +19,7 @@ export function ControlPanel({
 
       <div style={{ borderLeft: '1px solid #ccc', paddingLeft: '10px', marginLeft: '10px', display: 'flex', gap: '5px', alignItems: 'center' }}>
         <select
+          aria-label="Trainingsmethode auswählen"
           value={trainerType}
           onChange={e => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -32,12 +32,17 @@ export function ControlPanel({
           onClick={onTrain}
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
+          title={dataCount === 0 ? "Zuerst Daten generieren" : ""}
         >
           {isTraining ? 'Suche läuft...' : '2. Trainieren'}
         </button>
       </div>
 
-      <button onClick={onRun} disabled={isTraining}>
+      <button
+        onClick={onRun}
+        disabled={isTraining}
+        title={isTraining ? "Bitte warten bis das Training beendet ist" : ""}
+      >
         3. Simulation Starten
       </button>
 
