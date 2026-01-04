@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'preact/hooks';
-import { PhysicsPhase } from './components/phases/PhysicsPhase';
-import { SpamPhase } from './components/phases/SpamPhase';
-import { SpamAdvancedPhase, SpamNonlinearPhase, SpamHiddenPhase } from './components/phases/AdvancedPhases';
+import { PhysicsPhase } from './components/phases/Phase1_Physics';
+import { SpamPhase } from './components/phases/Phase2_Spam';
+import { SpamAdvancedPhase } from './components/phases/Phase3_SpamAdvanced';
+import { SpamNonlinearPhase } from './components/phases/Phase4_SpamNonlinear';
+import { SpamHiddenPhase } from './components/phases/Phase5_SpamHidden';
 import { ArchitectureGallery } from './components/debug/ArchitectureGallery';
 import './app.css';
 

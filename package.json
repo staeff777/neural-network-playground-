@@ -6,12 +6,27 @@
   "engines": {
     "node": ">=22"
   },
+  "files": [
+    "dist-lib"
+  ],
+  "main": "./dist-lib/nn-demonstrator.umd.cjs",
+  "module": "./dist-lib/nn-demonstrator.js",
+  "exports": {
+    ".": {
+      "import": "./dist-lib/nn-demonstrator.js",
+      "require": "./dist-lib/nn-demonstrator.umd.cjs"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:lib": "vite build --config vite.lib.config.js",
     "preview": "vite preview"
   },
   "dependencies": {
+    "preact": "^10.27.2"
+  },
+  "peerDependencies": {
     "preact": "^10.27.2"
   },
   "devDependencies": {

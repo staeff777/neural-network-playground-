@@ -2,3 +2,4 @@ node_modules
 pnpm-workspace.yaml
 .vite
 dist
+dist-lib
