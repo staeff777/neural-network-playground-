@@ -25,7 +25,7 @@ Import the phase components in your React/Preact application:
 
 ```jsx
 import { PhysicsPhase, SpamPhase, SpamAdvancedPhase, SpamNonlinearPhase, SpamHiddenPhase } from 'nn-demonstrator';
-import 'nn-demonstrator/dist-lib/nn-demonstrator.css';
+import 'nn-demonstrator/nn-demonstrator.css';
 
 
 function App() {

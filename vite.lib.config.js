@@ -12,14 +12,7 @@ export default defineConfig({
             formats: ['es', 'umd']
         },
         rollupOptions: {
-            external: ['preact', 'preact/hooks', 'preact/compat'],
-            output: {
-                globals: {
-                    preact: 'preact',
-                    'preact/hooks': 'preactHooks',
-                    'preact/compat': 'preactCompat'
-                }
-            }
+            // Preact is now bundled!
         },
         outDir: 'dist-lib',
         emptyOutDir: true

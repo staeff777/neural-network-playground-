@@ -15,12 +15,13 @@
     ".": {
       "import": "./dist-lib/nn-demonstrator.js",
       "require": "./dist-lib/nn-demonstrator.umd.cjs"
-    }
+    },
+    "./nn-demonstrator.css": "./dist-lib/nn-demonstrator.css"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:lib": "vite build --config vite.lib.config.js",
+    "build:lib": "vite build --config vite.lib.config.js && cp COMPONENTS.md dist-lib/",
     "preview": "vite preview"
   },
   "dependencies": {
