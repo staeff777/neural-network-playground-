@@ -58,6 +58,7 @@ export const config = {
 
     trainingConfig: {
         seed: 1319434789,
+        maxSteps: 10000,
         params: generateParamsConfig()
     },
 

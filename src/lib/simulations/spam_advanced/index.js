@@ -144,6 +144,7 @@ export const config = {
   // 3 steps per weight = 3^4 = 81.
   // 10 steps for bias = 810. Manageable.
   trainingConfig: {
+    maxSteps: 3000,
     params: [
       { name: 'w1 (Spam-Worte)', min: 1, max: 4, step: 0.5 }, // 0, 1, 2
       { name: 'w2 (Großbuchst.)', min: 0, max: 2, step: 0.5 }, // 0, 0.5, 1

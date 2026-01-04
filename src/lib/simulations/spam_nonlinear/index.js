@@ -8,6 +8,7 @@ export const FEATURES = [
 ];
 
 
+
 const usePreparedData = true;
 const preparedData = [
     {
@@ -326,6 +327,7 @@ export const config = {
     },
 
     trainingConfig: {
+        maxSteps: 4000,
         params: [
             { name: 'w1 (Worte)', min: -5, max: 5, step: 0.5 },
             { name: 'w2 (Links)', min: -5, max: 5, step: 0.5 },

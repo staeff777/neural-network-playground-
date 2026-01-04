@@ -41,6 +41,7 @@ export const config = {
   },
 
   trainingConfig: {
+    maxSteps: 3000,
     params: [
       { name: 'weight', min: 0, max: 2, step: 0.1 },
       { name: 'bias', min: -10, max: 5, step: 0.5 }
