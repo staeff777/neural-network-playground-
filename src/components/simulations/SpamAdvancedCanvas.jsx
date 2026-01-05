@@ -3,9 +3,9 @@ import { getNiceTicks } from '../../utils/graphUtils';
 
 export const DEFAULT_FEATURES = [
     { label: "Spam Words", idx: 0, max: 15 },
-    { label: "Großbuchstaben", idx: 1, max: 25 },
+    { label: "Capitals", idx: 1, max: 25 },
     { label: "Links", idx: 2, max: 8 },
-    { label: "Gesamtworte", idx: 3, max: 100 }
+    { label: "Total Words", idx: 3, max: 100 }
 ];
 
 export function SpamAdvancedCanvas({
@@ -894,7 +894,7 @@ export function SpamAdvancedCanvas({
             />
 
             {!hideControls && (
-                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+                <div class="control-text" style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
                     {viewMode === '3d' ? 'Drag to rotate 3D view' : (viewMode === 'scatter' ? 'Drag to Pan, Scroll to Zoom' : 'Wähle Achsen für die Visualisierung')}
                 </div>
             )}

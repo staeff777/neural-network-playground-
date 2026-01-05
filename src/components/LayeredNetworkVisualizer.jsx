@@ -130,8 +130,9 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                                             x={lIdx === 0 ? x - 30 : x + 30}
                                             y={y}
                                             textAnchor={lIdx === 0 ? "end" : "start"}
+                                            style={{ textAnchor: lIdx === 0 ? "end" : "start" }}
                                             dominantBaseline="middle"
-                                            fontSize="13"
+                                            fontSize="14"
                                             fontWeight="bold"
                                             fill="#333"
                                         >

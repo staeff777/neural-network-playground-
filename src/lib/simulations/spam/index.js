@@ -52,7 +52,7 @@ export const config = {
   networkViz: {
     formula: 'p = σ(w * x + b)',
     inputLabel: "Wörter (x)",
-    outputLabel: "Spam? (p)",
+    outputLabel: "Spam (p)",
     biasLabel: "b"
   },
 

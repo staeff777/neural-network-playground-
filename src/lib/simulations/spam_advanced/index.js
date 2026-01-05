@@ -146,10 +146,10 @@ export const config = {
   trainingConfig: {
     maxSteps: 3000,
     params: [
-      { name: 'w1 (Spam-Worte)', min: 1, max: 4, step: 0.5 }, // 0, 1, 2
-      { name: 'w2 (Großbuchst.)', min: 0, max: 2, step: 0.5 }, // 0, 0.5, 1
+      { name: 'w1 (Spam Words)', min: 1, max: 4, step: 0.5 }, // 0, 1, 2
+      { name: 'w2 (Capitals)', min: 0, max: 2, step: 0.5 }, // 0, 0.5, 1
       { name: 'w3 (Links)', min: 0, max: 3, step: 0.5 }, // 0, 1.5, 3
-      { name: 'w4 (Gesamtworte)', min: -2, max: 2, step: 0.5 }, // -1, -0.5, 0
+      { name: 'w4 (Total Words)', min: -2, max: 2, step: 0.5 }, // -1, -0.5, 0
       { name: 'bias', min: -8, max: 8, step: 2 } // -10, -8, ..., 0 (6 steps)
     ]
 
@@ -157,8 +157,8 @@ export const config = {
 
   networkViz: {
     formula: 'p = σ(w₁x₁ + w₂x₂ + w₃x₃ + w₄x₄ + b)',
-    inputLabels: ["Spam-Worte", "Großbuchst.", "Links", "Gesamtworte"],
-    outputLabel: "Spam? (p)",
+    inputLabels: ["Spam Words", "Capitals", "Links", "Total  Words"],
+    outputLabel: "Spam (p)",
     biasLabel: "b"
   },
 

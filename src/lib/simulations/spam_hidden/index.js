@@ -63,8 +63,8 @@ export const config = {
 
     networkViz: {
         formula: 'Deep Network',
-        inputLabels: ["Worte", "Links"],
-        outputLabel: "Spam?",
+        inputLabels: ["Spam Words", "Links"],
+        outputLabel: "Spam (p)",
         biasLabel: "b"
     },
 

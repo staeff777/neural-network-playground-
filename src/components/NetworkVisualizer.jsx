@@ -31,7 +31,6 @@ export function NetworkVisualizer({
   }
 
   // Normalize inputs to arrays
-  // Normalize inputs to arrays
   let rawInput = input;
   if (input && !Array.isArray(input) && typeof input === 'object' && input.input && Array.isArray(input.input)) {
     rawInput = input.input;
@@ -50,7 +49,7 @@ export function NetworkVisualizer({
   const spacingY = 90; // Vertical spacing between inputs
 
   // Box Dimensions
-  const boxWidth = 300; // Widened to fit internal components
+  const boxWidth = 260; // Widened to fit internal components
   const boxPaddingTop = 60;
   const boxPaddingBottom = 60;
 
@@ -61,7 +60,7 @@ export function NetworkVisualizer({
   const svgHeight = boxHeight + 60;
   const svgWidth = 600; // Widened SVG
 
-  const centerX = svgWidth / 2;
+  const centerX = svgWidth / 2 + 10;
   const boxLeft = centerX - boxWidth / 2;
   const boxRight = centerX + boxWidth / 2;
   const centerY = boxHeight / 2 + 20;
@@ -98,7 +97,7 @@ export function NetworkVisualizer({
           strokeWidth="3"
           strokeDasharray="5,5"
         />
-        <text x={centerX} y={40} textAnchor="middle" fill="#777" fontSize="12" fontWeight="bold">NEURAL NETWORK</text>
+
 
         {/* Converge point for weights */}
         {(() => {
@@ -124,7 +123,7 @@ export function NetworkVisualizer({
                     />
 
                     {/* Weight Label - positioned along the line */}
-                    <g transform={`translate(${(boxLeft + sumPointX) / 2 + (i - (numInputs - 1) / 2) * 5}, ${(y + centerY) / 2})`}>
+                    <g transform={`translate(${(boxLeft + sumPointX) / 2 + (1 - (numInputs - 1) / 2) * 5}, ${(y + centerY) / 2})`}>
                       <rect x="-24" y="-9" width="50" height="18" fill="#fff" rx="4" stroke="#e0e0e0" />
                       <text x="0" y="4" textAnchor="middle" fill="#e74c3c" fontSize="10" fontWeight="bold">
                         {wVal.toFixed(1)}
@@ -134,12 +133,21 @@ export function NetworkVisualizer({
                     {/* Input Node */}
                     <circle cx={boxLeft} cy={y} r={circleRadius} fill="#fff" stroke="#333" strokeWidth="2" />
 
-                    {/* Input Label (Further Left) */}
-                    <text x={boxLeft - 40} y={y} textAnchor="end" dominantBaseline="middle" fontWeight="bold" fontSize="14">
+                    {/* Input Label (Further Left - Right Aligned) */}
+                    <text
+                      x={boxLeft - 30}
+                      y={y + 5}
+                      textAnchor="end"
+                      style={{ textAnchor: 'end' }}
+                      dominantBaseline="middle"
+                      fontWeight="bold"
+                      fontSize="14"
+                      fill="#333"
+                    >
                       {label}
                     </text>
                     {/* Value */}
-                    <text x={boxLeft} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#333">
+                    <text x={boxLeft - 13} y={y + 5} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#333">
                       {val.toFixed(decimals)}
                     </text>
                   </g>
@@ -197,9 +205,11 @@ export function NetworkVisualizer({
 
 
         {/* Formula */}
-        <text x={centerX} y={svgHeight - 15} textAnchor="middle" fontSize="12" fontStyle="italic" fill="#777">
-          {formula}
-        </text>
+        <foreignObject className="formula" x={centerX - 200} y={svgHeight - 25} width={400} height={20}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '18px', fontStyle: 'italic', color: '#777' }}>
+            {formula}
+          </div>
+        </foreignObject>
       </svg>
     </div>
   );
