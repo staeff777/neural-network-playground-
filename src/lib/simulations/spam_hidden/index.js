@@ -33,8 +33,8 @@ const generateParamsConfig = () => {
 // seeds: 536112786 with: 
 
 export const config = {
-    id: 'spam_hidden',
-    title: 'Phase 5: Deep Learning (Hidden Layer)',
+    id: 'double_layer_nonlinear',
+    title: 'Phase 5: Double Layer Nonlinear Data',
     description: 'Spam-Erkennung mit einem Hidden Layer (10 Neuronen). Das Deep Neural Network kann die nicht-lineare Verteilung ("Spam-Insel") erkennen.',
     Model: HiddenLayerModel,
     GroundTruth: SpamAdvancedTruth,
@@ -46,10 +46,9 @@ export const config = {
     // Reuse data generation from Phase 4
     // We provide a dummy input for the "Simulation" tab live view if needed
     getInput: (time) => {
-        return {
-            input: [50, 0],
-            text: "Live Input"
-        };
+        const features = [50, 0];
+        features.text = "Live Input";
+        return features;
     },
 
     generateData: (groundTruth) => {

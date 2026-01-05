@@ -9,9 +9,10 @@ const pseudoRand = (seed) => {
 };
 
 export const config = {
-  id: 'spam',
-  title: 'Phase 2: Logistische Regression (Spam Filter)',
-  description: 'Spam-Erkennung: Wahrscheinlichkeit p = σ(w*x + b)',
+  id: 'logistic_regression',
+  // Previously "Phase 2: Spam Classification"
+  title: 'Phase 2: Logistic Regression',
+  description: 'Klassifikation von E-Mails als "Spam" oder "Kein Spam" basierend auf der Wortanzahl. Dies ist eine logistische Regression.',
   Model: LogisticModel,
   GroundTruth: SpamFilterTruth,
   CanvasComponent: SpamCanvas,

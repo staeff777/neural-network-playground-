@@ -2,7 +2,7 @@ import { useSimulationRunner } from '../../hooks/useSimulationRunner';
 import { SimulationLayout } from '../layout/SimulationLayout';
 
 export function SpamPhase() {
-    const hookState = useSimulationRunner('spam');
+    const hookState = useSimulationRunner('logistic_regression');
     const { simConfig, trainingData, groundTruth, trainingHistory, neuralNet } = hookState;
 
     if (!simConfig) return <div className="loading">Lade Simulation...</div>;

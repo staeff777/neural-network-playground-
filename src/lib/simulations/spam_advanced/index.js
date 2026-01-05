@@ -33,9 +33,9 @@ const analyze = (text) => {
 };
 
 export const config = {
-  id: 'spam_advanced',
-  title: 'Phase 3: Erweiterter Spam-Filter (4 Eingaben)',
-  description: 'Spam-Erkennung mit 4 Merkmalen: Spam-Worte, Großbuchstaben, Links, Gesamtworte.',
+  id: 'multiple_inputs',
+  title: 'Phase 3: Multiple Inputs',
+  description: 'Erweiterte Spam-Erkennung mit zwei linearen Merkmalen (Worte und Links). Das Netz lernt eine Trennlinie.',
   Model: LogisticModelVector,
   GroundTruth: SpamAdvancedTruth,
   CanvasComponent: SpamAdvancedCanvas,

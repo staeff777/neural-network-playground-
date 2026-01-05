@@ -50,7 +50,7 @@ export function BaseSpamAdvancedPhase({ simId }) {
     const renderSimulationView = () => {
         let pred = 0;
         try {
-            if (neuralNet.current) {
+            if (neuralNet.current && currentInput) {
                 pred = neuralNet.current.predict(currentInput);
             }
         } catch (e) {

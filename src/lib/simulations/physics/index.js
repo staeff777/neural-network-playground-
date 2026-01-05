@@ -1,11 +1,12 @@
+
 import { GroundTruth } from './ground_truth';
 import { SimpleNeuralNet } from './model';
 import { PhysicsCanvas } from '../../../components/simulations/PhysicsCanvas';
 
 export const config = {
-  id: 'physics',
-  title: 'Phase 1: Lineare Regression (Exhaustive Search 2D)',
-  description: 'Physiksimulation: Weg-Zeit-Gesetz (s = v*t + s0)',
+  id: 'linear_regression',
+  title: 'Phase 1: Linear Regression',
+  description: 'Ein einfaches Neuron lernt den Zusammenhang zwischen Zeit und Position. Dies entspricht einer linearen Regression.',
   Model: SimpleNeuralNet,
   GroundTruth: GroundTruth,
   CanvasComponent: PhysicsCanvas,

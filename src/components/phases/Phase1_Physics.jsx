@@ -3,7 +3,7 @@ import { SimulationLayout } from '../layout/SimulationLayout';
 import { PositionTimeGraph } from '../simulations/PositionTimeGraph';
 
 export function PhysicsPhase() {
-    const hookState = useSimulationRunner('physics');
+    const hookState = useSimulationRunner('linear_regression');
     const { simConfig, trainingData, groundTruth, trainingHistory, neuralNet, time, currentInput } = hookState;
 
     if (!simConfig) return <div className="loading">Lade Simulation...</div>;

@@ -12,7 +12,7 @@ export function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('sim') || 'physics';
+    const id = params.get('sim') || 'linear_regression';
     setSimId(id);
   }, []);
 
@@ -25,7 +25,7 @@ export function App() {
           <h1>Neural Network Demonstrator</h1>
           <p>Architecture Gallery (Debug)</p>
           <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-            <a href="?sim=physics" style={{ marginRight: '10px' }}>Back to App</a>
+            <a href="?sim=linear_regression" style={{ marginRight: '10px' }}>Back to App</a>
           </div>
         </header>
         <main>
@@ -42,11 +42,11 @@ export function App() {
 
   const getValidationTitle = (id) => {
     switch (id) {
-      case 'physics': return 'Phase 1: Physik Simulation';
-      case 'spam': return 'Phase 2: Spam Klassifikation (Basic)';
-      case 'spam_advanced': return 'Phase 3: Spam Klassifikation (Erweitert)';
-      case 'spam_nonlinear': return 'Phase 4: Nicht-Lineare Klassifikation';
-      case 'spam_hidden': return 'Phase 5: Deep Learning (Hidden Layers)';
+      case 'linear_regression': return 'Phase 1: Linear Regression';
+      case 'logistic_regression': return 'Phase 2: Logistic Regression';
+      case 'multiple_inputs': return 'Phase 3: Multiple Inputs';
+      case 'single_layer_nonlinear': return 'Phase 4: Single Layer Nonlinear Data';
+      case 'double_layer_nonlinear': return 'Phase 5: Double Layer Nonlinear Data';
       default: return 'Neural Network Demonstrator';
     }
   }
@@ -57,20 +57,20 @@ export function App() {
         <h1>Neural Network Demonstrator</h1>
         <p>{getValidationTitle(simId)}</p>
         <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-          <a href="?sim=physics" style={{ marginRight: '10px', fontWeight: simId === 'physics' ? 'bold' : 'normal' }}>Phase 1 (Physik)</a>
-          <a href="?sim=spam" style={{ marginRight: '10px', fontWeight: simId === 'spam' ? 'bold' : 'normal' }}>Phase 2 (Spam)</a>
-          <a href="?sim=spam_advanced" style={{ marginRight: '10px', fontWeight: simId === 'spam_advanced' ? 'bold' : 'normal' }}>Phase 3 (Spam Extended)</a>
-          <a href="?sim=spam_nonlinear" style={{ marginRight: '10px', fontWeight: simId === 'spam_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear)</a>
-          <a href="?sim=spam_hidden" style={{ fontWeight: simId === 'spam_hidden' ? 'bold' : 'normal' }}>Phase 5 (Deep)</a>
+          <a href="?sim=linear_regression" style={{ marginRight: '10px', fontWeight: simId === 'linear_regression' ? 'bold' : 'normal' }}>Phase 1 (Linear)</a>
+          <a href="?sim=logistic_regression" style={{ marginRight: '10px', fontWeight: simId === 'logistic_regression' ? 'bold' : 'normal' }}>Phase 2 (Logistic)</a>
+          <a href="?sim=multiple_inputs" style={{ marginRight: '10px', fontWeight: simId === 'multiple_inputs' ? 'bold' : 'normal' }}>Phase 3 (Multi)</a>
+          <a href="?sim=single_layer_nonlinear" style={{ marginRight: '10px', fontWeight: simId === 'single_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear 1)</a>
+          <a href="?sim=double_layer_nonlinear" style={{ fontWeight: simId === 'double_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 5 (Nonlinear 2)</a>
         </div>
       </header>
 
       <main style={{ height: '100%' }}>
-        {simId === 'physics' && <PhysicsPhase />}
-        {simId === 'spam' && <SpamPhase />}
-        {simId === 'spam_advanced' && <SpamAdvancedPhase />}
-        {simId === 'spam_nonlinear' && <SpamNonlinearPhase />}
-        {simId === 'spam_hidden' && <SpamHiddenPhase />}
+        {simId === 'linear_regression' && <PhysicsPhase />}
+        {simId === 'logistic_regression' && <SpamPhase />}
+        {simId === 'multiple_inputs' && <SpamAdvancedPhase />}
+        {simId === 'single_layer_nonlinear' && <SpamNonlinearPhase />}
+        {simId === 'double_layer_nonlinear' && <SpamHiddenPhase />}
       </main>
     </div>
   );

@@ -13,5 +13,5 @@ const registry = {
 };
 
 export function getSimulationConfig(id) {
-  return registry[id] || registry['physics']; // Default to physics
+  return registry[id] || registry['linear_regression']; // Default to linear_regression
 }

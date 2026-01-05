@@ -302,8 +302,8 @@ export const generateNonlinearData = () => {
 
 
 export const config = {
-    id: 'spam_nonlinear',
-    title: 'Phase 4: Nicht-lineare Daten',
+    id: 'single_layer_nonlinear',
+    title: 'Phase 4: Single Layer Nonlinear Data',
     description: 'Spam-Erkennung mit nur 2 Merkmalen, aber komplexer Verteilung. Ein einfacher linearer Klassifikator (Perzeptron) wird hier scheitern.',
     Model: LogisticModelVector,
     GroundTruth: SpamAdvancedTruth, // Reuse, only acts as a container

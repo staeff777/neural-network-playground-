@@ -220,11 +220,15 @@ export function useSimulationRunner(simId) {
         }
     };
 
+    // Derived State for Current Input (Live)
+    const currentInput = (simConfig && simConfig.getInput) ? simConfig.getInput(time) : undefined;
+
     return {
         simConfig,
         groundTruth,
         neuralNet,
         time,
+        currentInput,
         isRunning,
         trainingData,
         trainingHistory,
