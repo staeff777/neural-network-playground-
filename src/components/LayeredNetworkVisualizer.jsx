@@ -1,4 +1,4 @@
-export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, outputLabel }) {
+export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, outputLabel, formula }) {
     if (!model || !model.getTopology) return null;
 
     const { inputCount, hiddenCounts, outputCount, weights1, biases1, weights2 } = model.getTopology();
@@ -79,7 +79,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                     strokeWidth="3"
                     strokeDasharray="5,5"
                 />
-                <text x={centerX} y={centerY - boxHeight / 2 + 20} textAnchor="middle" fill="#777" fontSize="12" fontWeight="bold">NEURAL NETWORK</text>
+
 
                 {/* CONNECTIONS */}
                 {/* Layer 0 -> 1 (Weights 1) */}
@@ -155,6 +155,15 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                     <line x1="10" y1="28" x2="30" y2="28" stroke="#e74c3c" strokeWidth="3" />
                     <text x="35" y="32" fontSize="10">Negative</text>
                 </g>
+
+                {/* Formula */}
+                {formula && (
+                    <foreignObject className="formula" x={centerX - 200} y={height - 25} width={400} height={20}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '18px', fontStyle: 'italic', color: '#777' }}>
+                            {formula}
+                        </div>
+                    </foreignObject>
+                )}
 
             </svg>
         </div>

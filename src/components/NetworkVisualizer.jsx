@@ -27,6 +27,7 @@ export function NetworkVisualizer({
       inputLabels={inpLabels}
       output={output}
       outputLabel={outputLabel}
+      formula={formula}
     />;
   }
 

@@ -62,7 +62,7 @@ export const config = {
     },
 
     networkViz: {
-        formula: 'Deep Network',
+        formula: 'p = σ(W₂ · σ(W₁ · x + b₁) + b₂)',
         inputLabels: ["Spam Words", "Links"],
         outputLabel: "Spam (p)",
         biasLabel: "b"
