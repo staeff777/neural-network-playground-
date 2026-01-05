@@ -1,5 +1,4 @@
-import './index.css';
-import './app.css';
+import './lib.css';
 
 export { PhysicsPhase } from './components/phases/Phase1_Physics';
 export { SpamPhase } from './components/phases/Phase2_Spam';

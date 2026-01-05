@@ -5,6 +5,7 @@ import { resolve } from 'path'
 export default defineConfig({
     plugins: [preact()],
     build: {
+        cssMinify: false,
         lib: {
             entry: resolve(__dirname, 'src/export.js'),
             name: 'NNDemonstrator',

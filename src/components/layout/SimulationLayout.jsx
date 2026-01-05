@@ -61,7 +61,7 @@ export function SimulationLayout({
     const vizProps = simConfig.networkViz || {};
 
     return (
-        <div className="layout-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="nn-demonstrator layout-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {/* Top Section: Simulation & Network */}
             <div className="top-section" style={{
                 display: 'flex',

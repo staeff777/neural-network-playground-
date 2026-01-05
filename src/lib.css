@@ -1,0 +1,111 @@
+.nn-demonstrator {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.nn-demonstrator a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+
+.nn-demonstrator a:hover {
+  color: #535bf2;
+}
+
+.nn-demonstrator button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+.nn-demonstrator button:hover {
+  border-color: #646cff;
+}
+
+.nn-demonstrator button:focus,
+.nn-demonstrator button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.nn-demonstrator button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.nn-demonstrator .simulation-section,
+.nn-demonstrator .training-section {
+  background: #333;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.nn-demonstrator .tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}
+
+.nn-demonstrator .tab-button {
+  background: none;
+  border: none;
+  font-size: 1.1em;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+
+.nn-demonstrator .tab-button.active {
+  color: #646cff;
+  border-bottom-color: #646cff;
+  font-weight: bold;
+}
+
+.nn-demonstrator .tab-button:hover {
+  color: #646cff;
+}
+
+.nn-demonstrator .loading {
+  padding: 1rem;
+}
+
+@media (prefers-color-scheme: light) {
+  .nn-demonstrator {
+    color: #213547;
+  }
+
+  .nn-demonstrator a:hover {
+    color: #747bff;
+  }
+
+  .nn-demonstrator .simulation-section,
+  .nn-demonstrator .training-section {
+    background: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .nn-demonstrator button {
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+  }
+}
+
