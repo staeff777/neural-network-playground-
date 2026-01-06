@@ -1,6 +1,8 @@
 import { useSimulationRunner } from '../../hooks/useSimulationRunner';
 import { SimulationLayout } from '../layout/SimulationLayout';
 import { PositionTimeGraph } from '../simulations/PositionTimeGraph';
+import { DataViewSwitcher } from '../common/DataViewSwitcher';
+import { DataTableView } from '../common/DataTableView';
 
 export function PhysicsPhase() {
     const hookState = useSimulationRunner('linear_regression');
@@ -39,12 +41,34 @@ export function PhysicsPhase() {
 
     // Render Logic for Data Tab (Plot)
     const renderDataView = () => {
+        const { dataViewMode, setDataViewMode } = hookState;
+
         return (
-            <PositionTimeGraph
-                data={trainingData}
-                groundTruth={groundTruth.current}
-                neuralNet={trainingHistory.length > 0 ? neuralNet.current : null}
-            />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
+                {dataViewMode === 'table' ? (
+                    <>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+                            <DataViewSwitcher viewMode={dataViewMode} onChange={setDataViewMode} />
+                        </div>
+                        <DataTableView
+                            data={trainingData}
+                            vizProps={simConfig.networkViz || {}}
+                            simConfig={simConfig}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+                            <DataViewSwitcher viewMode={dataViewMode} onChange={setDataViewMode} />
+                        </div>
+                        <PositionTimeGraph
+                            data={trainingData}
+                            groundTruth={groundTruth.current}
+                            neuralNet={trainingHistory.length > 0 ? neuralNet.current : null}
+                        />
+                    </>
+                )}
+            </div>
         );
     };
 
@@ -53,6 +77,7 @@ export function PhysicsPhase() {
             hookState={hookState}
             renderSimulationView={renderSimulationView}
             renderDataView={renderDataView}
+            customDataHandling={true}
         />
     );
 }

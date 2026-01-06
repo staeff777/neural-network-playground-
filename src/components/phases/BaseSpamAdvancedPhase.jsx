@@ -1,5 +1,7 @@
 import { useSimulationRunner } from '../../hooks/useSimulationRunner';
 import { SimulationLayout } from '../layout/SimulationLayout';
+import { DataViewSwitcher } from '../common/DataViewSwitcher';
+import { DataTableView } from '../common/DataTableView';
 
 export function BaseSpamAdvancedPhase({ simId }) {
     const hookState = useSimulationRunner(simId);
@@ -9,42 +11,9 @@ export function BaseSpamAdvancedPhase({ simId }) {
 
     const CanvasComponent = simConfig.CanvasComponent;
 
-    // View Toggle for Data Tab (embedded in controls)
-    const ViewToggle = (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ background: '#eee', borderRadius: '4px', padding: '2px', display: 'flex', gap: '2px' }}>
-                <button
-                    onClick={() => setDataViewMode('table')}
-                    style={{
-                        background: dataViewMode === 'table' ? '#fff' : 'transparent',
-                        border: 'none',
-                        borderRadius: '3px',
-                        padding: '5px 15px',
-                        cursor: 'pointer',
-                        boxShadow: dataViewMode === 'table' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                        fontWeight: dataViewMode === 'table' ? 'bold' : 'normal',
-                        color: dataViewMode === 'table' ? '#333' : '#666'
-                    }}
-                >
-                    Table
-                </button>
-                <button
-                    onClick={() => setDataViewMode('plot')}
-                    style={{
-                        background: dataViewMode === 'plot' ? '#fff' : 'transparent',
-                        border: 'none',
-                        borderRadius: '3px',
-                        padding: '5px 15px',
-                        cursor: 'pointer',
-                        boxShadow: dataViewMode === 'plot' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                        fontWeight: dataViewMode === 'plot' ? 'bold' : 'normal',
-                        color: dataViewMode === 'plot' ? '#333' : '#666'
-                    }}
-                >
-                    Graph
-                </button>
-            </div>
-        </div>
+    // View Toggle is now passed as a component instance to additionalControls
+    const viewToggleControl = (
+        <DataViewSwitcher viewMode={dataViewMode} onChange={setDataViewMode} />
     );
 
     const renderSimulationView = () => {
@@ -82,18 +51,34 @@ export function BaseSpamAdvancedPhase({ simId }) {
         const extraProps = {
             allowedModes: ['scatter', '3d', 'features'],
             showModel: trainingHistory.length > 0,
-            additionalControls: ViewToggle, // Pass toggle to canvas
+            additionalControls: viewToggleControl, // Pass toggle to canvas
             features: simConfig.featuresConfig
         };
 
         return (
-            <CanvasComponent
-                time={0}
-                data={trainingData}
-                groundTruth={groundTruth.current}
-                neuralNet={neuralNet.current}
-                {...extraProps}
-            />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '300px', width: '100%' }}>
+                {dataViewMode === 'table' ? (
+                    <>
+                        <div style={{ marginBottom: '15px' }}>
+                            <DataViewSwitcher viewMode={dataViewMode} onChange={setDataViewMode} />
+                        </div>
+                        <DataTableView
+                            data={trainingData}
+                            vizProps={simConfig.networkViz || {}}
+                            simConfig={simConfig}
+                        />
+                    </>
+                ) : (
+                    /* Plot Mode: Switcher passed as additionalControls */
+                    <CanvasComponent
+                        time={0}
+                        data={trainingData}
+                        groundTruth={groundTruth.current}
+                        neuralNet={neuralNet.current}
+                        {...extraProps}
+                    />
+                )}
+            </div>
         );
     };
 
@@ -102,6 +87,7 @@ export function BaseSpamAdvancedPhase({ simId }) {
             hookState={hookState}
             renderSimulationView={renderSimulationView}
             renderDataView={renderDataView}
+            customDataHandling={true}
         />
     );
 }

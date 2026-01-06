@@ -1,6 +1,8 @@
 import { useState } from 'preact/hooks';
 import { useSimulationRunner } from '../../hooks/useSimulationRunner';
 import { SimulationLayout } from '../layout/SimulationLayout';
+import { DataViewSwitcher } from '../common/DataViewSwitcher';
+import { DataTableView } from '../common/DataTableView';
 
 export function SpamPhase() {
     const hookState = useSimulationRunner('logistic_regression');
@@ -21,6 +23,8 @@ export function SpamPhase() {
 
     // Phase 2: Data tab shows static canvas
     const renderDataView = () => {
+        const { dataViewMode, setDataViewMode } = hookState;
+
         const extraProps = {
             staticMode: true,
             showGroundTruth: true,
@@ -32,18 +36,33 @@ export function SpamPhase() {
         }
 
         return (
-            <div style={{ padding: '10px 0' }}>
-
-                <CanvasComponent
-                    time={0}
-                    data={trainingData}
-                    groundTruth={groundTruth.current}
-                    neuralNet={neuralNet.current}
-
-                    showProbabilities={true}
-                    {...extraProps}
-
-                />
+            <div style={{ padding: '10px 0', display: 'flex', flexDirection: 'column', width: '100%' }}>
+                {dataViewMode === 'table' ? (
+                    <>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+                            <DataViewSwitcher viewMode={dataViewMode} onChange={setDataViewMode} />
+                        </div>
+                        <DataTableView
+                            data={trainingData}
+                            vizProps={simConfig.networkViz || {}}
+                            simConfig={simConfig}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+                            <DataViewSwitcher viewMode={dataViewMode} onChange={setDataViewMode} />
+                        </div>
+                        <CanvasComponent
+                            time={0}
+                            data={trainingData}
+                            groundTruth={groundTruth.current}
+                            neuralNet={neuralNet.current}
+                            showProbabilities={true}
+                            {...extraProps}
+                        />
+                    </>
+                )}
             </div>
         );
     };
@@ -54,6 +73,7 @@ export function SpamPhase() {
             renderSimulationView={renderSimulationView}
             renderDataView={renderDataView}
             simulationEnabled={false}
+            customDataHandling={true}
         />
     );
 }

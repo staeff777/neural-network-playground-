@@ -3,13 +3,17 @@ import { TrainingVisualizer } from '../TrainingVisualizer';
 import { NetworkVisualizer } from '../NetworkVisualizer';
 import { ControlPanel } from '../ControlPanel';
 
+import { DataViewSwitcher } from '../common/DataViewSwitcher';
+import { DataTableView } from '../common/DataTableView';
+
 export function SimulationLayout({
     hookState,
     renderSimulationView,
     renderDataView,
     // Optional overrides
     networkVizProps = {},
-    simulationEnabled = true
+    simulationEnabled = true,
+    customDataHandling = false // New prop
 }) {
     const {
         simConfig,
@@ -143,120 +147,34 @@ export function SimulationLayout({
 
                             {activeTab === 'data' && (
                                 <div className="data-content" style={{ flex: 1, overflowY: 'auto' }}>
-                                    {/* View Toggle */}
-                                    {(!['gallery'].includes(simConfig.id)) && (
-                                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
-                                            <div style={{ background: '#eee', borderRadius: '4px', padding: '2px', display: 'flex', gap: '2px' }}>
-                                                <button
-                                                    onClick={() => setDataViewMode('table')}
-                                                    style={{
-                                                        background: dataViewMode === 'table' ? '#fff' : 'transparent',
-                                                        border: 'none',
-                                                        borderRadius: '3px',
-                                                        padding: '5px 15px',
-                                                        cursor: 'pointer',
-                                                        boxShadow: dataViewMode === 'table' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                                        fontWeight: dataViewMode === 'table' ? 'bold' : 'normal',
-                                                        color: dataViewMode === 'table' ? '#333' : '#666'
-                                                    }}
-                                                >
-                                                    Table
-                                                </button>
-                                                <button
-                                                    onClick={() => setDataViewMode('plot')}
-                                                    style={{
-                                                        background: dataViewMode === 'plot' ? '#fff' : 'transparent',
-                                                        border: 'none',
-                                                        borderRadius: '3px',
-                                                        padding: '5px 15px',
-                                                        cursor: 'pointer',
-                                                        boxShadow: dataViewMode === 'plot' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                                        fontWeight: dataViewMode === 'plot' ? 'bold' : 'normal',
-                                                        color: dataViewMode === 'plot' ? '#333' : '#666'
-                                                    }}
-                                                >
-                                                    Graph
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Content */}
-                                    {dataViewMode === 'plot' && (
-                                        <div style={{ marginBottom: '20px' }}>
-                                            {renderDataView ? renderDataView() : <p>No graph available.</p>}
-                                        </div>
-                                    )}
-
-                                    {dataViewMode === 'table' && (
+                                    {customDataHandling ? (
+                                        renderDataView ? renderDataView() : <p>No data view available.</p>
+                                    ) : (
                                         <>
-                                            {trainingData.length > 0 ? (
-                                                <div style={{ maxHeight: maximizedPanel ? 'calc(100vh - 350px)' : '400px', overflowY: 'auto' }}>
-                                                    <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                                                        <thead>
-                                                            <tr style={{ background: '#eee', borderBottom: '2px solid #ddd' }}>
-                                                                {Array.isArray(vizProps.inputLabels) ? (
-                                                                    vizProps.inputLabels.map((lbl, idx) => (
-                                                                        <th key={idx} style={{ padding: '8px' }}>{lbl}</th>
-                                                                    ))
-                                                                ) : (
-                                                                    <th style={{ padding: '8px' }}>Input ({vizProps.inputLabel})</th>
-                                                                )}
-                                                                <th style={{ padding: '8px' }}>Target</th>
-                                                                {trainingData.length > 0 && trainingData[0].text && (
-                                                                    <th style={{ padding: '8px' }}>Email Text</th>
-                                                                )}
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {trainingData.map((d, i) => {
-                                                                const isClassification = ['spam', 'spam_advanced', 'spam_hidden', 'spam_nonlinear'].includes(simConfig.id);
-                                                                let rowColor = 'transparent';
-                                                                let displayTarget = d.target;
-                                                                let targetStyle = { padding: '8px' };
-
-                                                                if (isClassification) {
-                                                                    const isSpam = d.target === 1;
-                                                                    rowColor = isSpam ? '#ffebee' : '#e8f5e9';
-                                                                    displayTarget = isSpam ? 'SPAM' : 'HAM';
-                                                                    targetStyle = {
-                                                                        ...targetStyle,
-                                                                        fontWeight: 'bold',
-                                                                        color: isSpam ? '#c0392b' : '#27ae60'
-                                                                    };
-                                                                } else {
-                                                                    displayTarget = typeof d.target === 'number' ? d.target.toFixed(2) : d.target;
-                                                                }
-
-                                                                return (
-                                                                    <tr key={i} style={{ background: rowColor, borderBottom: '1px solid #ddd' }}>
-                                                                        {Array.isArray(d.input) ? (
-                                                                            d.input.map((v, idx) => (
-                                                                                <td key={idx} style={{ padding: '8px' }}>{v.toFixed(0)}</td>
-                                                                            ))
-                                                                        ) : (
-                                                                            <td style={{ padding: '8px' }}>{d.input.toFixed(2)}</td>
-                                                                        )}
-
-                                                                        <td style={targetStyle}>
-                                                                            {displayTarget}
-                                                                        </td>
-                                                                        {d.text && (
-                                                                            <td style={{ padding: '8px', color: '#555', fontStyle: 'italic', maxWidth: '300px' }}>
-                                                                                {d.text}
-                                                                            </td>
-                                                                        )}
-                                                                    </tr>
-                                                                )
-                                                            })}
-                                                        </tbody>
-                                                    </table>
+                                            {/* Standard View Toggle */}
+                                            {(!['gallery'].includes(simConfig.id)) && (
+                                                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+                                                    <DataViewSwitcher viewMode={dataViewMode} onChange={setDataViewMode} />
                                                 </div>
-                                            ) : (
-                                                <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                                                    No training data generated yet.
-                                                </p>
                                             )}
+
+                                            {/* Standard Content */}
+                                            <div style={{ marginTop: '15px' }}>
+                                                {dataViewMode === 'plot' && (
+                                                    <div style={{ marginBottom: '20px' }}>
+                                                        {renderDataView ? renderDataView() : <p>No graph available.</p>}
+                                                    </div>
+                                                )}
+
+                                                {dataViewMode === 'table' && (
+                                                    <DataTableView
+                                                        data={trainingData}
+                                                        vizProps={vizProps}
+                                                        simConfig={simConfig}
+                                                        maximizedPanel={maximizedPanel}
+                                                    />
+                                                )}
+                                            </div>
                                         </>
                                     )}
                                 </div>
