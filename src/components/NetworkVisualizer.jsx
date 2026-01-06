@@ -78,7 +78,7 @@ export function NetworkVisualizer({
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <h3 style={{ marginBottom: '10px' }}>Model Architecture</h3>
+      <div className="model-title" style={{ marginBottom: '10px' }}>Model Architecture</div>
       <svg width={svgWidth} height={svgHeight} style={{ overflow: 'visible' }}>
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="27" refY="3.5" orient="auto">
@@ -95,8 +95,8 @@ export function NetworkVisualizer({
           rx="15"
           fill="none"
           stroke="#333"
-          strokeWidth="3"
-          strokeDasharray="5,5"
+          strokeWidth="2"
+
         />
 
 
@@ -125,7 +125,7 @@ export function NetworkVisualizer({
 
                     {/* Weight Label - positioned along the line */}
                     <g transform={`translate(${(boxLeft + sumPointX) / 2 + (1 - (numInputs - 1) / 2) * 5}, ${(y + centerY) / 2})`}>
-                      <rect x="-24" y="-9" width="50" height="18" fill="#fff" rx="4" stroke="#e0e0e0" />
+                      <rect x="-24" y="-8" width="50" height="18" fill="#fff" rx="4" stroke="#e0e0e0" />
                       <text x="0" y="4" textAnchor="middle" fill="#e74c3c" fontSize="10" fontWeight="bold">
                         {wVal.toFixed(1)}
                       </text>
@@ -137,7 +137,7 @@ export function NetworkVisualizer({
                     {/* Input Label (Further Left - Right Aligned) */}
                     <text
                       x={boxLeft - 30}
-                      y={y + 5}
+                      y={y + 2}
                       textAnchor="end"
                       style={{ textAnchor: 'end' }}
                       dominantBaseline="middle"
@@ -145,7 +145,15 @@ export function NetworkVisualizer({
                       fontSize="14"
                       fill="#333"
                     >
-                      {label}
+                      {label.toString().split('\n').map((line, i, arr) => (
+                        <tspan
+                          key={i}
+                          x={boxLeft - 30}
+                          dy={i === 0 ? `${(arr.length - 1) * -0.6}em` : '1.2em'}
+                        >
+                          {line}
+                        </tspan>
+                      ))}
                     </text>
                     {/* Value */}
                     <text x={boxLeft - 13} y={y + 5} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#333">
@@ -201,7 +209,15 @@ export function NetworkVisualizer({
 
         {/* Output Label (Further Right) */}
         <text x={boxRight + 40} y={centerY + 4} textAnchor="start" dominantBaseline="middle" fontWeight="bold" fontSize="14" fill="#333">
-          {outputLabel}
+          {outputLabel.toString().split('\n').map((line, i, arr) => (
+            <tspan
+              key={i}
+              x={boxRight + 40}
+              dy={i === 0 ? `${(arr.length - 1) * -0.6}em` : '1.2em'}
+            >
+              {line}
+            </tspan>
+          ))}
         </text>
 
 

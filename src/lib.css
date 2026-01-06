@@ -48,6 +48,11 @@
   opacity: 0.5;
 }
 
+.nn-demonstrator .model-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
 .nn-demonstrator .simulation-section,
 .nn-demonstrator .training-section {
   background: #333;
@@ -108,4 +113,3 @@
     border: 1px solid #ccc;
   }
 }
-

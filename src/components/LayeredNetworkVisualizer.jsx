@@ -19,14 +19,14 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
     const [showMatrices, setShowMatrices] = useState(false);
 
     // Config
-    const width = 600;
+    const width = 400;
     const height = 400;
     const centerY = height / 2;
     const centerX = width / 2;
 
     // Box dimensions
-    const boxWidth = 350;
-    const boxHeight = 280;
+    const boxWidth = 300;
+    const boxHeight = 300;
     const boxLeft = centerX - boxWidth / 2;
     const boxRight = centerX + boxWidth / 2;
 
@@ -41,6 +41,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
 
     const getNodeY = (layerIdx, nodeIdx) => {
         const count = layers[layerIdx].count;
+        let spacingY = Math.min(50, boxHeight / count);
         const totalH = (count - 1) * spacingY;
         return centerY - totalH / 2 + nodeIdx * spacingY;
     };
@@ -211,7 +212,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                                 >
                                     {/* Circle */}
                                     <circle
-                                        cx={x} cy={y} r={14}
+                                        cx={x} cy={y} r={12}
                                         fill={isSelected ? colors.highlight : colors.fill}
                                         stroke={colors.stroke}
                                         strokeWidth={isSelected ? "3" : "2"}
@@ -226,7 +227,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                                     {/* Labels for Input/Output */}
                                     {layer.labels && (
                                         <text
-                                            x={lIdx === 0 ? x - 30 : x + 30}
+                                            x={lIdx === 0 ? x - 18 : x + 18}
                                             y={y}
                                             textAnchor={lIdx === 0 ? "end" : "start"}
                                             style={{ textAnchor: lIdx === 0 ? "end" : "start", pointerEvents: 'none' }}
@@ -235,7 +236,17 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                                             fontWeight="600"
                                             fill="#444"
                                         >
-                                            {layer.labels[nIdx] || ''}
+
+
+                                            {(layer.labels[nIdx] || '').toString().split('\n').map((line, i, arr) => (
+                                                <tspan
+                                                    key={i}
+                                                    x={lIdx === 0 ? x - 18 : x + 18}
+                                                    dy={i === 0 ? `${(arr.length - 1) * -0.6}em` : '1.2em'}
+                                                >
+                                                    {line}
+                                                </tspan>
+                                            ))}
                                         </text>
                                     )}
 
