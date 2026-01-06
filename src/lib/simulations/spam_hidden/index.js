@@ -46,8 +46,17 @@ export const config = {
     // Reuse data generation from Phase 4
     // We provide a dummy input for the "Simulation" tab live view if needed
     getInput: (time) => {
-        const features = [50, 0];
-        features.text = "Live Input";
+        // Re-use logic from Phase 4 if available, or implement fresh
+        // Since we didn't export it yet, let's just create a dynamic one here that mirrors it
+        // Or better: import the prepared data via generator
+        // Let's just create a dynamic sample on the fly to avoid dependency mess for now
+        // Actually Phase 5 uses generateNonlinearData() which returns preparedData.
+        const data = generateNonlinearData();
+        const idx = Math.floor(time * 0.5) % data.length;
+        const item = data[idx];
+        const features = [...item.input];
+        features.text = item.text;
+        features.groundTruth = item.target;
         return features;
     },
 

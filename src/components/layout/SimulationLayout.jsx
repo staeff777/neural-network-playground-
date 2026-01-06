@@ -27,6 +27,7 @@ export function SimulationLayout({
         handleTrain,
         handleRun,
         handleReset, // Add handleReset here
+        isRunning,
         trainerType,
         setTrainerType,
         currentInput, // We might need to ensure this is passed or derived
@@ -320,7 +321,8 @@ export function SimulationLayout({
                 dataCount={trainingData.length}
                 trainerType={trainerType}
                 onTrainerTypeChange={setTrainerType}
-                simConfig={simConfig} // Pass config to allow disabling Run button for static sims
+                simConfig={simConfig}
+                isRunning={isRunning}
             />
         </div>
     );

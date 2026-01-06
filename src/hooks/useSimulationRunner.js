@@ -110,6 +110,27 @@ export function useSimulationRunner(simId) {
         return () => cancelAnimationFrame(animationFrameId);
     }, [isRunning, simConfig]);
 
+    // Toggle Logic
+    const handleRun = () => {
+        setTime(0); // Reset time on run
+        setIsRunning(true);
+        setStatusMsg('Simulation läuft...');
+        setActiveTab('simulation');
+    };
+
+    const handleStop = () => {
+        setIsRunning(false);
+        setStatusMsg('Simulation pausiert.');
+    };
+
+    const toggleRun = () => {
+        if (isRunning) {
+            handleStop();
+        } else {
+            handleRun();
+        }
+    };
+
     const handleTrain = async () => {
         try {
             if (trainingData.length === 0 || !simConfig) return;
@@ -143,6 +164,10 @@ export function useSimulationRunner(simId) {
                         const { weights, bias } = bestSoFar.bestParams;
                         neuralNet.current.setWeights(weights);
                         neuralNet.current.setBias(bias);
+                    } else if (neuralNet.current.setWeight && bestSoFar.bestParams && bestSoFar.bestParams.weights && bestSoFar.bestParams.weights.length >= 1) {
+                        // Fallback: Model has setWeight but we got weights array (e.g. Phase 1 with Adaptive Random)
+                        neuralNet.current.setWeight(bestSoFar.bestParams.weights[0]);
+                        neuralNet.current.setBias(bestSoFar.bestParams.bias);
                     }
                 } else if (bestSoFar && bestSoFar.bestWeight !== undefined) {
                     // Legacy
@@ -179,13 +204,6 @@ export function useSimulationRunner(simId) {
             setIsTraining(false);
             setStatusMsg(`Fehler beim Training: ${e.message}`);
         }
-    };
-
-    const handleRun = () => {
-        setTime(0);
-        setIsRunning(true);
-        setStatusMsg('Simulation läuft...');
-        setActiveTab('simulation');
     };
 
     const handleReset = () => {
@@ -239,7 +257,10 @@ export function useSimulationRunner(simId) {
         trainerType,
         statusMsg,
         handleTrain,
-        handleRun,
+        handleRun: toggleRun,
+        handleStop,
+        toggleRun,
+
         handleReset,
         setTrainerType,
         setActiveTab,

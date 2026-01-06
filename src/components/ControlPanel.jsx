@@ -7,7 +7,8 @@ export function ControlPanel({
   trainingStep,
   dataCount,
   trainerType,
-  onTrainerTypeChange
+  onTrainerTypeChange,
+  isRunning
 }) {
   return (
     <div
@@ -37,8 +38,12 @@ export function ControlPanel({
         </button>
       </div>
 
-      <button onClick={onRun} disabled={isTraining}>
-        3. Simulation Starten
+      <button
+        onClick={onRun}
+        disabled={isTraining}
+        style={isRunning ? { background: '#f39c12', color: 'white' } : {}}
+      >
+        3. Simulation {isRunning ? 'Stoppen' : 'Starten'}
       </button>
 
       <button

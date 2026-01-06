@@ -20,14 +20,14 @@ const analyze = (text) => {
   // Clamp
   if (spamCount > 10) spamCount = 10;
 
-  // 2. Caps
-  const capsCount = (text.match(/[A-Z]/g) || []).length;
+  // 2. Caps (Normalize by 10)
+  const capsCount = (text.match(/[A-Z]/g) || []).length / 10;
 
   // 3. Links
   const linkCount = (text.match(/http/g) || []).length;
 
-  // 4. Total Words
-  const wordCount = text.split(/\s+/).length;
+  // 4. Total Words (Normalize by 50)
+  const wordCount = text.split(/\s+/).length / 50;
 
   return [spamCount, capsCount, linkCount, wordCount];
 };
@@ -157,7 +157,7 @@ export const config = {
 
   networkViz: {
     formula: 'p = σ(w₁x₁ + w₂x₂ + w₃x₃ + w₄x₄ + b)',
-    inputLabels: ["Spam Words", "Capitals", "Links", "Total  Words"],
+    inputLabels: ["Spam Words", "Caps (/10)", "Links", "Words (/50)"],
     outputLabel: "Spam (p)",
     biasLabel: "b"
   },

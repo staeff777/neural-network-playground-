@@ -317,8 +317,12 @@ export const config = {
     // Not really used for generation anymore since we have a custom generator, 
     // but useful for "predict" calls if the canvas asks for "getInput(time)"
     getInput: (time) => {
-        const features = [50, 0];
-        features.text = "Live Input";
+        // Cycle through preparedData
+        const idx = Math.floor(time * 0.5) % preparedData.length;
+        const item = preparedData[idx];
+        const features = [...item.input];
+        features.text = item.text;
+        features.groundTruth = item.target;
         return features;
     },
 
