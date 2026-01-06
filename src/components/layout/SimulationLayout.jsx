@@ -26,7 +26,7 @@ export function SimulationLayout({
         statusMsg,
         handleTrain,
         handleRun,
-        handleReset, // Add handleReset here
+
         isRunning,
         trainerType,
         setTrainerType,
@@ -89,7 +89,7 @@ export function SimulationLayout({
                     <button
                         onClick={() => toggleMaximize('simulation')}
                         style={maximizeBtnStyle}
-                        title={maximizedPanel === 'simulation' ? "Originalgröße" : "Maximieren"}
+                        title={maximizedPanel === 'simulation' ? "Original Size" : "Maximize"}
                     >
                         {maximizedPanel === 'simulation' ? (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14h6v6" /><path d="M20 10h-6V4" /><path d="M14 10l7-7" /><path d="M3 21l7-7" /></svg>
@@ -110,7 +110,7 @@ export function SimulationLayout({
                                 className={`tab-button ${activeTab === 'data' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('data')}
                             >
-                                Daten
+                                Data
                             </button>
                             <button
                                 className={`tab-button ${activeTab === 'training' ? 'active' : ''}`}
@@ -150,7 +150,7 @@ export function SimulationLayout({
                                                         color: dataViewMode === 'table' ? '#333' : '#666'
                                                     }}
                                                 >
-                                                    Tabelle
+                                                    Table
                                                 </button>
                                                 <button
                                                     onClick={() => setDataViewMode('plot')}
@@ -174,7 +174,7 @@ export function SimulationLayout({
                                     {/* Content */}
                                     {dataViewMode === 'plot' && (
                                         <div style={{ marginBottom: '20px' }}>
-                                            {renderDataView ? renderDataView() : <p>Kein Graph verfügbar.</p>}
+                                            {renderDataView ? renderDataView() : <p>No graph available.</p>}
                                         </div>
                                     )}
 
@@ -194,7 +194,7 @@ export function SimulationLayout({
                                                                 )}
                                                                 <th style={{ padding: '8px' }}>Target</th>
                                                                 {trainingData.length > 0 && trainingData[0].text && (
-                                                                    <th style={{ padding: '8px' }}>E-Mail Text</th>
+                                                                    <th style={{ padding: '8px' }}>Email Text</th>
                                                                 )}
                                                             </tr>
                                                         </thead>
@@ -244,7 +244,7 @@ export function SimulationLayout({
                                                 </div>
                                             ) : (
                                                 <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                                                    Noch keine Trainingsdaten generiert.
+                                                    No training data generated yet.
                                                 </p>
                                             )}
                                         </>
@@ -263,7 +263,7 @@ export function SimulationLayout({
                                         />
                                     ) : (
                                         <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                                            Noch kein Training gestartet.
+                                            No training started yet.
                                         </p>
                                     )}
                                 </div>
@@ -286,7 +286,7 @@ export function SimulationLayout({
                     <button
                         onClick={() => toggleMaximize('network')}
                         style={maximizeBtnStyle}
-                        title={maximizedPanel === 'network' ? "Originalgröße" : "Maximieren"}
+                        title={maximizedPanel === 'network' ? "Original Size" : "Maximize"}
                     >
                         {maximizedPanel === 'network' ? (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14h6v6" /><path d="M20 10h-6V4" /><path d="M14 10l7-7" /><path d="M3 21l7-7" /></svg>
@@ -315,7 +315,7 @@ export function SimulationLayout({
             <ControlPanel
                 onTrain={handleTrain}
                 onRun={handleRun}
-                onReset={handleReset}
+
                 isTraining={isTraining}
                 trainingStep={trainingStepIndex}
                 dataCount={trainingData.length}

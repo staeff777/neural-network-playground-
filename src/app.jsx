@@ -16,7 +16,7 @@ export function App() {
     setSimId(id);
   }, []);
 
-  if (!simId) return <div>Lade App...</div>;
+  if (!simId) return <div>Loading App...</div>;
 
   if (simId === 'gallery') {
     return (

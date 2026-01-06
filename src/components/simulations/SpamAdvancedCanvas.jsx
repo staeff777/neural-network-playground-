@@ -614,7 +614,7 @@ export function SpamAdvancedCanvas({
             ctx.fillStyle = '#666';
             ctx.textAlign = 'right';
             ctx.font = '11px sans-serif';
-            ctx.fillText("Rot=Spam, Grün=OK", width - 10, 20);
+            ctx.fillText("Red=Spam, Green=OK", width - 10, 20);
         }
 
         // --- TEXT VIEW MODE ---
@@ -625,7 +625,7 @@ export function SpamAdvancedCanvas({
             if (!currentInput || !currentInput.text) {
                 ctx.fillStyle = '#999';
                 ctx.font = '20px sans-serif';
-                ctx.fillText("Kein Text verfügbar", width / 2, height / 2);
+                ctx.fillText("No text available", width / 2, height / 2);
                 return;
             }
 
@@ -665,13 +665,13 @@ export function SpamAdvancedCanvas({
             const isSpamGT = currentInput.groundTruth === 1;
             ctx.font = 'bold 16px sans-serif';
             ctx.fillStyle = '#555';
-            ctx.fillText(`Wahrheit: ${isSpamGT ? 'SPAM' : 'HAM'}`, x, y);
+            ctx.fillText(`Truth: ${isSpamGT ? 'SPAM' : 'HAM'}`, x, y);
 
             y += 30;
             const probPct = (currentPrediction * 100).toFixed(1);
             ctx.font = 'bold 20px sans-serif';
             ctx.fillStyle = isSpamPred ? '#c0392b' : '#27ae60';
-            ctx.fillText(`Vorhersage: ${isSpamPred ? 'SPAM' : 'HAM'} (${probPct}%)`, x, y);
+            ctx.fillText(`Prediction: ${isSpamPred ? 'SPAM' : 'HAM'} (${probPct}%)`, x, y);
 
             return;
         }

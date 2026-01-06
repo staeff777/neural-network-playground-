@@ -6,7 +6,7 @@ import { PhysicsCanvas } from '../../../components/simulations/PhysicsCanvas';
 export const config = {
   id: 'linear_regression',
   title: 'Phase 1: Linear Regression',
-  description: 'Ein einfaches Neuron lernt den Zusammenhang zwischen Zeit und Position. Dies entspricht einer linearen Regression.',
+  description: 'A simple neuron learns the relationship between time and position. This corresponds to a linear regression.',
   Model: SimpleNeuralNet,
   GroundTruth: GroundTruth,
   CanvasComponent: PhysicsCanvas,

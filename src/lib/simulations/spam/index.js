@@ -12,7 +12,7 @@ export const config = {
   id: 'logistic_regression',
   // Previously "Phase 2: Spam Classification"
   title: 'Phase 2: Logistic Regression',
-  description: 'Klassifikation von E-Mails als "Spam" oder "Kein Spam" basierend auf der Wortanzahl. Dies ist eine logistische Regression.',
+  description: 'Classification of emails as "Spam" or "Not Spam" based on word count. This is a logistic regression.',
   Model: LogisticModel,
   GroundTruth: SpamFilterTruth,
   CanvasComponent: SpamCanvas,

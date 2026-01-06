@@ -2,7 +2,7 @@ export function ControlPanel({
 
   onTrain,
   onRun,
-  onReset,
+
   isTraining,
   trainingStep,
   dataCount,
@@ -13,11 +13,11 @@ export function ControlPanel({
   return (
     <div
       role="region"
-      aria-label="Steuerung"
+      aria-label="Controls"
       style={{ padding: '20px', background: '#eee', borderRadius: '8px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}
     >
 
-      <span aria-live="polite">Datenpunkte: {dataCount}</span>
+      <span aria-live="polite">Data Points: {dataCount}</span>
 
       <div style={{ borderLeft: '1px solid #ccc', paddingLeft: '10px', marginLeft: '10px', display: 'flex', gap: '5px', alignItems: 'center' }}>
         <select
@@ -34,7 +34,7 @@ export function ControlPanel({
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
         >
-          {isTraining ? 'Suche läuft...' : '2. Trainieren'}
+          {isTraining ? 'Searching...' : '2. Train'}
         </button>
       </div>
 
@@ -43,16 +43,10 @@ export function ControlPanel({
         disabled={isTraining}
         style={isRunning ? { background: '#f39c12', color: 'white' } : {}}
       >
-        3. Simulation {isRunning ? 'Stoppen' : 'Starten'}
+        3. Simulation {isRunning ? 'Stop' : 'Start'}
       </button>
 
-      <button
-        onClick={onReset}
-        style={{ marginLeft: 'auto', background: '#e74c3c', color: 'white' }}
-        aria-label="Simulation zurücksetzen"
-      >
-        Reset
-      </button>
+
     </div>
   );
 }

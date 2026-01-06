@@ -5,7 +5,7 @@ export function BaseSpamAdvancedPhase({ simId }) {
     const hookState = useSimulationRunner(simId);
     const { simConfig, trainingData, groundTruth, trainingHistory, neuralNet, time, currentInput, dataViewMode, setDataViewMode } = hookState;
 
-    if (!simConfig) return <div className="loading">Lade Simulation...</div>;
+    if (!simConfig) return <div className="loading">Loading Simulation...</div>;
 
     const CanvasComponent = simConfig.CanvasComponent;
 
@@ -26,7 +26,7 @@ export function BaseSpamAdvancedPhase({ simId }) {
                         color: dataViewMode === 'table' ? '#333' : '#666'
                     }}
                 >
-                    Tabelle
+                    Table
                 </button>
                 <button
                     onClick={() => setDataViewMode('plot')}

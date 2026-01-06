@@ -19,7 +19,7 @@ export function useSimulationRunner(simId) {
     const [activeTab, setActiveTab] = useState('simulation');
     const [dataViewMode, setDataViewMode] = useState('table'); // 'plot' or 'table'
     const [trainerType, setTrainerType] = useState('random');
-    const [statusMsg, setStatusMsg] = useState('Bereit.');
+    const [statusMsg, setStatusMsg] = useState('Ready.');
 
     // Ref for tracking time delta
     const lastTimeRef = useRef(0);
@@ -36,7 +36,7 @@ export function useSimulationRunner(simId) {
         const config = getSimulationConfig(simId);
 
         if (!config) {
-            setStatusMsg('Fehler: Simulation nicht gefunden.');
+            setStatusMsg('Error: Simulation not found.');
             return;
         }
 
@@ -64,7 +64,7 @@ export function useSimulationRunner(simId) {
             }
         } catch (e) {
             console.error("Initialization Error:", e);
-            setStatusMsg(`Init Fehler: ${e.message}`);
+            setStatusMsg(`Init Error: ${e.message}`);
         }
     }, [simId]);
 
@@ -92,7 +92,7 @@ export function useSimulationRunner(simId) {
                 // Check for auto-stop
                 if (simConfig && simConfig.isFinished && simConfig.isFinished(newTime)) {
                     setIsRunning(false);
-                    setStatusMsg('Simulation beendet.');
+                    setStatusMsg('Simulation finished.');
                     return newTime;
                 }
 
@@ -114,13 +114,13 @@ export function useSimulationRunner(simId) {
     const handleRun = () => {
         setTime(0); // Reset time on run
         setIsRunning(true);
-        setStatusMsg('Simulation läuft...');
+        setStatusMsg('Simulation running...');
         setActiveTab('simulation');
     };
 
     const handleStop = () => {
         setIsRunning(false);
-        setStatusMsg('Simulation pausiert.');
+        setStatusMsg('Simulation paused.');
     };
 
     const toggleRun = () => {
@@ -138,7 +138,7 @@ export function useSimulationRunner(simId) {
             setIsTraining(true);
             setTrainingStepIndex(0); // Will visually track the latest added point
             setTrainingHistory([]); // Start fresh
-            setStatusMsg('Suche optimales Gewicht und Bias (Live Visualisierung)...');
+            setStatusMsg('Searching for optimal weight and bias (Live Visualization)...');
             setActiveTab('training');
 
             const trainingModel = new simConfig.Model();
@@ -178,7 +178,7 @@ export function useSimulationRunner(simId) {
 
             let result;
             if (trainerType === 'random') {
-                setStatusMsg('Suche optimales Gewicht und Bias (Random Search)...');
+                setStatusMsg('Searching for optimal weight and bias (Random Search)...');
                 const trainOptions = {
                     seed: simConfig.trainingConfig.seed,
                     maxSteps: simConfig.trainingConfig.maxSteps,
@@ -197,46 +197,16 @@ export function useSimulationRunner(simId) {
                 );
             }
 
-            setStatusMsg(`Training fertig! Min Error: ${result.minError.toFixed(5)}`);
+            setStatusMsg(`Training finished! Min Error: ${result.minError.toFixed(5)}`);
             setIsTraining(false);
         } catch (e) {
             console.error("Training Error:", e);
             setIsTraining(false);
-            setStatusMsg(`Fehler beim Training: ${e.message}`);
+            setStatusMsg(`Training Error: ${e.message}`);
         }
     };
 
-    const handleReset = () => {
-        setIsRunning(false);
-        setTime(0);
-        setTrainingHistory([]);
-        setTrainingStepIndex(-1);
 
-        // Regenerate Data
-        if (simConfig && simConfig.generateData && groundTruth.current) {
-            try {
-                const data = simConfig.generateData(groundTruth.current);
-                setTrainingData(data);
-                setStatusMsg('Reset durchgeführt & Daten neu generiert.');
-            } catch (e) {
-                console.error("Regenerate Data Error:", e);
-                setTrainingData([]);
-            }
-        } else {
-            setTrainingData([]);
-            setStatusMsg('Reset durchgeführt.');
-        }
-
-        try {
-            if (neuralNet.current && simConfig?.defaultParams) {
-                if (simConfig.defaultParams.weight !== undefined) neuralNet.current.setWeight(simConfig.defaultParams.weight);
-                if (simConfig.defaultParams.weights !== undefined && neuralNet.current.setWeights) neuralNet.current.setWeights(simConfig.defaultParams.weights);
-                if (simConfig.defaultParams.bias !== undefined) neuralNet.current.setBias(simConfig.defaultParams.bias);
-            }
-        } catch (e) {
-            console.error("Reset Error:", e);
-        }
-    };
 
     // Derived State for Current Input (Live)
     const currentInput = (simConfig && simConfig.getInput) ? simConfig.getInput(time) : undefined;
@@ -261,7 +231,7 @@ export function useSimulationRunner(simId) {
         handleStop,
         toggleRun,
 
-        handleReset,
+
         setTrainerType,
         setActiveTab,
         setDataViewMode

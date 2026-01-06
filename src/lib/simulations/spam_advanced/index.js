@@ -35,7 +35,7 @@ const analyze = (text) => {
 export const config = {
   id: 'multiple_inputs',
   title: 'Phase 3: Multiple Inputs',
-  description: 'Erweiterte Spam-Erkennung mit zwei linearen Merkmalen (Worte und Links). Das Netz lernt eine Trennlinie.',
+  description: 'Advanced spam detection with two linear features (words and links). The network learns a separation line.',
   Model: LogisticModelVector,
   GroundTruth: SpamAdvancedTruth,
   CanvasComponent: SpamAdvancedCanvas,

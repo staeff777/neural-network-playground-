@@ -16,7 +16,7 @@ export function PositionTimeGraph({ data, groundTruth, neuralNet }) {
         if (!data || data.length === 0) {
             ctx.fillStyle = '#999';
             ctx.textAlign = 'center';
-            ctx.fillText("Keine Daten vorhanden", width / 2, height / 2);
+            ctx.fillText("No data available", width / 2, height / 2);
             return;
         }
 
@@ -45,7 +45,7 @@ export function PositionTimeGraph({ data, groundTruth, neuralNet }) {
         // Labels
         ctx.fillStyle = '#333';
         ctx.textAlign = 'center';
-        ctx.fillText("Zeit (t)", width / 2, height - 10);
+        ctx.fillText("Time (t)", width / 2, height - 10);
 
         ctx.save();
         ctx.translate(15, height / 2);

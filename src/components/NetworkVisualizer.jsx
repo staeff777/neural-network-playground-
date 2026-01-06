@@ -78,7 +78,7 @@ export function NetworkVisualizer({
 
   return (
     <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', background: '#fff', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <h3 style={{ marginBottom: '10px' }}>Modell Architektur</h3>
+      <h3 style={{ marginBottom: '10px' }}>Model Architecture</h3>
       <svg width={svgWidth} height={svgHeight} style={{ overflow: 'visible' }}>
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="27" refY="3.5" orient="auto">

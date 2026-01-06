@@ -3,7 +3,7 @@ import { LogisticModelVector } from '../spam_advanced/model';
 import { SpamAdvancedCanvas } from '../../../components/simulations/SpamAdvancedCanvas';
 
 export const FEATURES = [
-    { label: "Gesamtworte", idx: 0, max: 400 },
+    { label: "Total Words", idx: 0, max: 400 },
     { label: "Links", idx: 1, max: 10 }
 ];
 
@@ -304,7 +304,7 @@ export const generateNonlinearData = () => {
 export const config = {
     id: 'single_layer_nonlinear',
     title: 'Phase 4: Single Layer Nonlinear Data',
-    description: 'Spam-Erkennung mit nur 2 Merkmalen, aber komplexer Verteilung. Ein einfacher linearer Klassifikator (Perzeptron) wird hier scheitern.',
+    description: 'Spam detection with only 2 features but complex distribution. A simple linear classifier (perceptron) will fail here.',
     Model: LogisticModelVector,
     GroundTruth: SpamAdvancedTruth, // Reuse, only acts as a container
     CanvasComponent: SpamAdvancedCanvas,
@@ -333,7 +333,7 @@ export const config = {
     trainingConfig: {
         maxSteps: 4000,
         params: [
-            { name: 'w1 (Worte)', min: -5, max: 5, step: 0.5 },
+            { name: 'w1 (Words)', min: -5, max: 5, step: 0.5 },
             { name: 'w2 (Links)', min: -5, max: 5, step: 0.5 },
             { name: 'bias', min: -10, max: 10, step: 1 }
         ]

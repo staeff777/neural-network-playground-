@@ -35,7 +35,7 @@ const generateParamsConfig = () => {
 export const config = {
     id: 'double_layer_nonlinear',
     title: 'Phase 5: Double Layer Nonlinear Data',
-    description: 'Spam-Erkennung mit einem Hidden Layer (10 Neuronen). Das Deep Neural Network kann die nicht-lineare Verteilung ("Spam-Insel") erkennen.',
+    description: 'Spam detection with a Hidden Layer (10 neurons). The Deep Neural Network can detect the nonlinear distribution ("Spam Island").',
     Model: HiddenLayerModel,
     GroundTruth: SpamAdvancedTruth,
     CanvasComponent: SpamAdvancedCanvas,

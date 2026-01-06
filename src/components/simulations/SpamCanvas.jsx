@@ -180,13 +180,13 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText("Anzahl 'Spam' Wörter", width / 2, height - 10);
+    ctx.fillText("Number of 'Spam' Words", width / 2, height - 10);
 
     ctx.save();
     ctx.translate(15, height / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    ctx.fillText('Spam Wahrscheinlichkeit', 0, 0);
+    ctx.fillText('Spam Probability', 0, 0);
     ctx.restore();
 
     // --- Content Clipping ---
