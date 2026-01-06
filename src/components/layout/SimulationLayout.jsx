@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { TrainingVisualizer } from '../TrainingVisualizer';
 import { NetworkVisualizer } from '../NetworkVisualizer';
 import { ControlPanel } from '../ControlPanel';
@@ -8,7 +8,8 @@ export function SimulationLayout({
     renderSimulationView,
     renderDataView,
     // Optional overrides
-    networkVizProps = {}
+    networkVizProps = {},
+    simulationEnabled = true
 }) {
     const {
         simConfig,
@@ -57,6 +58,13 @@ export function SimulationLayout({
 
     const panelTransition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
 
+    // Force switch away from simulation tab if disabled
+    useEffect(() => {
+        if (!simulationEnabled && activeTab === 'simulation') {
+            setActiveTab('data');
+        }
+    }, [simulationEnabled, activeTab, setActiveTab]);
+
     // Derived values
     const inputToUse = currentInput !== undefined ? currentInput : (simConfig.getInput ? simConfig.getInput(time) : time);
     const vizProps = simConfig.networkViz || {};
@@ -100,12 +108,14 @@ export function SimulationLayout({
 
                     <div className="simulation-section" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <div className="tabs" style={{ paddingRight: '120px' }}>
-                            <button
-                                className={`tab-button ${activeTab === 'simulation' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('simulation')}
-                            >
-                                Simulation
-                            </button>
+                            {simulationEnabled && (
+                                <button
+                                    className={`tab-button ${activeTab === 'simulation' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('simulation')}
+                                >
+                                    Simulation
+                                </button>
+                            )}
                             <button
                                 className={`tab-button ${activeTab === 'data' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('data')}
@@ -323,6 +333,7 @@ export function SimulationLayout({
                 onTrainerTypeChange={setTrainerType}
                 simConfig={simConfig}
                 isRunning={isRunning}
+                simulationEnabled={simulationEnabled}
             />
         </div>
     );

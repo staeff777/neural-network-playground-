@@ -53,6 +53,7 @@ export function SpamPhase() {
             hookState={hookState}
             renderSimulationView={renderSimulationView}
             renderDataView={renderDataView}
+            simulationEnabled={false}
         />
     );
 }
