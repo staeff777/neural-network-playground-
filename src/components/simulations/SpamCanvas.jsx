@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'preact/hooks';
 import { getNiceTicks } from '../../utils/graphUtils';
 
-export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = false, showModel = true, showGroundTruth = true }) {
+export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = false, showModel = true, showGroundTruth = true, showProbabilities = false }) {
   const canvasRef = useRef(null);
   const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -235,9 +235,9 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       ctx.setLineDash([]);
     };
 
-    if (showGroundTruth && groundTruth) {
-      drawCurve(groundTruth, '#ccc', [5, 5]);
-    }
+    // if (showGroundTruth && groundTruth) {
+    //   drawCurve(groundTruth, '#ccc', [5, 5]);
+    // }
 
     if (showModel && neuralNet) {
       drawCurve(neuralNet, '#e74c3c');
@@ -250,13 +250,17 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         // Simple culling
         if (d.input < visXMin - 5 || d.input > visXMax + 5) return;
 
+        const jitterX = 0;
+        const jitterY = 0;
+
+        // Ground Truth Point
         const cx = mapX(d.input);
         const cy = mapY(d.target);
 
-        // Record for hover
+        // Record for hover (Ground Truth)
         drawnPoints.current.push({
           x: cx, y: cy,
-          info: { x: cx, y: cy, input: d.input, target: d.target }
+          info: { x: cx, y: cy, input: d.input, target: d.target, type: 'Ground Truth' }
         });
 
         let predColor = null;
@@ -267,10 +271,49 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
           } catch (e) { }
         }
 
-        const jitterX = (Math.sin(d.input * 123) * 5);
-        const jitterY = (Math.cos(d.input * 321) * 5);
+        // Prediction Point (if enabled)
+        // Prediction Point (if enabled)
+        if (showProbabilities && neuralNet && typeof neuralNet.predict === 'function') {
+          try {
+            const prob = neuralNet.predict(d.input);
+            const cyPred = mapY(prob);
 
-        if (predColor) {
+            // connector (very light dashed)
+            if (showModel) {
+              ctx.beginPath();
+              ctx.moveTo(cx, cy);
+              ctx.lineTo(cx, cyPred);
+              ctx.setLineDash([2, 4]);
+              ctx.strokeStyle = 'rgba(0,0,0,0.15)'; // Very light
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              ctx.setLineDash([]); // Reset
+            }
+
+            let predHaloColor = null;
+            if (neuralNet && showModel) {
+              const prediction = neuralNet.predict(d.input);
+              predHaloColor = prediction > 0.5 ? '#e74c3c' : '#2ecc71';
+            }
+
+            if (predHaloColor) {
+              ctx.beginPath();
+              ctx.arc(cx, cyPred, 6, 0, Math.PI * 2); // Reduced radius 8->6
+              ctx.strokeStyle = predHaloColor;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            }
+
+            // Record for hover (Prediction)
+            drawnPoints.current.push({
+              x: cx, y: cyPred,
+              info: { x: cx, y: cyPred, input: d.input, target: d.target, prediction: prob, type: 'Prediction' }
+            });
+
+          } catch (e) { }
+        }
+        // If Probabilities OFF, show Halo on Ground Truth
+        else if (predColor) {
           ctx.beginPath();
           ctx.arc(cx + jitterX, cy + jitterY, 8, 0, Math.PI * 2);
           ctx.strokeStyle = predColor;
@@ -278,6 +321,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
           ctx.stroke();
         }
 
+        // Ground Truth Point (Anchor) - Always drawn
         ctx.beginPath();
         ctx.arc(cx + jitterX, cy + jitterY, 5, 0, Math.PI * 2);
         ctx.fillStyle = d.target === 1 ? '#e74c3c' : '#2ecc71';
@@ -317,18 +361,43 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
           } catch (e) { }
         }
 
-        const jitterX = (pseudoRand(i + 333) - 0.5) * 10;
-        const jitterY = (pseudoRand(i + 444) - 0.5) * 10;
+        // Prediction Point (if enabled)
+        if (showProbabilities && neuralNet && typeof neuralNet.predict === 'function') {
+          try {
+            const prob = neuralNet.predict(wordCount);
+            const cyPred = mapY(prob);
 
-        // Record for hover
-        const finalX = cx + jitterX;
-        const finalY = cy + jitterY;
-        drawnPoints.current.push({
-          x: finalX, y: finalY,
-          info: { x: finalX, y: finalY, input: wordCount, target: isSpam }
-        });
+            // connector (very light dashed)
+            if (showModel) {
+              ctx.beginPath();
+              ctx.moveTo(cx, cy);
+              ctx.lineTo(cx, cyPred);
+              ctx.setLineDash([2, 4]);
+              ctx.strokeStyle = 'rgba(0,0,0,0.35)'; // Very light
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              ctx.setLineDash([]); // Reset
+            }
 
-        if (predColor) {
+            let predHaloColor = null;
+            if (neuralNet && showModel) {
+              const prediction = neuralNet.predict(wordCount);
+              predHaloColor = prediction > 0.5 ? '#e74c3c' : '#2ecc71';
+            }
+
+
+            if (predHaloColor) {
+              ctx.beginPath();
+              ctx.arc(cx, cyPred, 6, 0, Math.PI * 2); // Reduced radius 8->6
+              ctx.strokeStyle = predHaloColor;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            }
+
+          } catch (e) { }
+        }
+        // If Probabilities OFF, show Halo on Ground Truth
+        else if (predColor) {
           ctx.beginPath();
           ctx.arc(finalX, finalY, 8, 0, Math.PI * 2);
           ctx.strokeStyle = predColor;
@@ -352,8 +421,8 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         const wordCount = Math.floor(r1 * 21);
         const prob = groundTruth.getProbability(wordCount);
         const isSpam = pseudoRand(i + 999) < prob ? 1 : 0;
-        const jitterX = (pseudoRand(i + 333) - 0.5) * 10;
-        const jitterY = (pseudoRand(i + 444) - 0.5) * 10;
+        const jitterX = 0;
+        const jitterY = 0;
 
         const cx = mapX(wordCount) + jitterX;
         const cy = mapY(isSpam) + jitterY;
@@ -382,9 +451,10 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
 
       const labelText = hoverInfo.target === 1 ? 'SPAM' : 'HAM';
       const wordsText = `Words: ${hoverInfo.input}`;
+      const typeText = hoverInfo.type ? `(${hoverInfo.type})` : '';
 
-      const tw = 100;
-      const th = 40;
+      const tw = 120;
+      const th = hoverInfo.type ? 55 : 40;
       let tx = hoverInfo.x + 10;
       let ty = hoverInfo.y - 10;
 
@@ -404,16 +474,19 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
 
       ctx.font = 'bold 11px sans-serif';
       ctx.fillStyle = hoverInfo.target === 1 ? '#e74c3c' : '#2ecc71';
-      ctx.fillText(labelText, tx + 8, ty + 6);
+      ctx.fillText(`${labelText} ${typeText}`, tx + 8, ty + 6);
 
       ctx.fillStyle = '#ddd';
       ctx.font = '10px sans-serif';
       ctx.fillText(wordsText, tx + 8, ty + 20);
+      if (hoverInfo.prediction !== undefined) {
+        ctx.fillText(`Pred: ${hoverInfo.prediction.toFixed(2)}`, tx + 8, ty + 32);
+      }
 
       ctx.restore();
     }
 
-  }, [time, groundTruth, neuralNet, data, staticMode, showModel, showGroundTruth, transform, hoverInfo]);
+  }, [time, groundTruth, neuralNet, data, staticMode, showModel, showGroundTruth, showProbabilities, transform, hoverInfo]);
 
   return (
     <div className="canvas-container">

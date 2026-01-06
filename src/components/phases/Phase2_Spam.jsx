@@ -1,3 +1,4 @@
+import { useState } from 'preact/hooks';
 import { useSimulationRunner } from '../../hooks/useSimulationRunner';
 import { SimulationLayout } from '../layout/SimulationLayout';
 
@@ -31,13 +32,19 @@ export function SpamPhase() {
         }
 
         return (
-            <CanvasComponent
-                time={0}
-                data={trainingData}
-                groundTruth={groundTruth.current}
-                neuralNet={neuralNet.current}
-                {...extraProps}
-            />
+            <div style={{ padding: '10px 0' }}>
+
+                <CanvasComponent
+                    time={0}
+                    data={trainingData}
+                    groundTruth={groundTruth.current}
+                    neuralNet={neuralNet.current}
+
+                    showProbabilities={true}
+                    {...extraProps}
+
+                />
+            </div>
         );
     };
 
