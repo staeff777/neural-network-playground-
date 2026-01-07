@@ -7,7 +7,17 @@ export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
         );
     }
 
-    const isClassification = ['logistic_regression', 'spam', 'spam_advanced', 'spam_hidden', 'spam_nonlinear'].includes(simConfig?.id);
+    const isClassification = [
+        'logistic_regression',
+        'spam',
+        'spam_advanced',
+        'spam_hidden',
+        'spam_nonlinear',
+        // Phases 3–5 spam sims
+        'multiple_inputs',
+        'single_layer_nonlinear',
+        'double_layer_nonlinear',
+    ].includes(simConfig?.id);
 
     return (
         <div style={{ maxHeight: maximizedPanel ? 'calc(100vh - 350px)' : '400px', overflowY: 'auto' }}>
