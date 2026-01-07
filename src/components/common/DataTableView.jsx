@@ -7,6 +7,8 @@ export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
         );
     }
 
+    const isClassification = ['logistic_regression', 'spam', 'spam_advanced', 'spam_hidden', 'spam_nonlinear'].includes(simConfig?.id);
+
     return (
         <div style={{ maxHeight: maximizedPanel ? 'calc(100vh - 350px)' : '400px', overflowY: 'auto' }}>
             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -19,7 +21,7 @@ export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
                         ) : (
                             <th style={{ padding: '8px' }}>Input ({vizProps.inputLabel})</th>
                         )}
-                        <th style={{ padding: '8px' }}>Target</th>
+                        <th style={{ padding: '8px' }}>{isClassification ? 'Spam?' : 'Target'}</th>
                         {data.length > 0 && data[0].text && (
                             <th style={{ padding: '8px' }}>Email Text</th>
                         )}
@@ -27,7 +29,6 @@ export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
                 </thead>
                 <tbody>
                     {data.map((d, i) => {
-                        const isClassification = ['spam', 'spam_advanced', 'spam_hidden', 'spam_nonlinear'].includes(simConfig.id);
                         let rowColor = 'transparent';
                         let displayTarget = d.target;
                         let targetStyle = { padding: '8px' };
