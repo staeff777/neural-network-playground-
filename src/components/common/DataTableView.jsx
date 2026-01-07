@@ -19,6 +19,12 @@ export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
         'double_layer_nonlinear',
     ].includes(simConfig?.id);
 
+    const truncateToLines = (text, maxLines = 2) => {
+        const lines = String(text ?? '').split(/\r?\n/);
+        if (lines.length <= maxLines) return String(text ?? '');
+        return `${lines.slice(0, maxLines).join('\n')}...`;
+    };
+
     return (
         <div style={{ maxHeight: maximizedPanel ? 'calc(100vh - 350px)' : '400px', overflowY: 'auto' }}>
             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -70,8 +76,18 @@ export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
                                     {displayTarget}
                                 </td>
                                 {d.text && (
-                                    <td style={{ padding: '8px', color: '#555', fontStyle: 'italic', maxWidth: '300px' }}>
-                                        {d.text}
+                                    <td style={{
+                                        padding: '8px',
+                                        color: '#555',
+                                        fontStyle: 'italic',
+                                        maxWidth: '300px',
+                                        whiteSpace: 'pre-line',
+                                        overflow: 'hidden',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                    }}>
+                                        {truncateToLines(d.text, 2)}
                                     </td>
                                 )}
                             </tr>
