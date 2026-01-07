@@ -29,6 +29,7 @@ export const config = {
 
   trainingConfig: {
     maxSteps: 2000,
+    showAccuracyPlot: false,
     params: [
       { name: 'weight', min: 0, max: 60, step: 1 },
       { name: 'bias', min: 0, max: 100, step: 2 }

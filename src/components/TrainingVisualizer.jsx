@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'preact/hooks';
 
-export function TrainingVisualizer({ history, currentStepIndex, isTraining, paramsConfig }) {
+export function TrainingVisualizer({ history, currentStepIndex, isTraining, paramsConfig, showAccuracyPlot = true }) {
   const canvasRef = useRef(null);
   const [page, setPage] = useState(0);
   const itemsPerPage = 6;
@@ -49,9 +49,10 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
     if (paramsConfig) {
       // Create a virtual list of "all plots"
-      // Item 0: Error over Step
-      // Item 1..N: Each Param
-      const totalVisualizations = 1 + paramsConfig.length;
+      // If enabled: Accuracy over Step + Error over Step + each Param over Error
+      // If disabled: Error over Step + each Param over Error
+      const basePlots = showAccuracyPlot ? 2 : 1;
+      const totalVisualizations = basePlots + paramsConfig.length;
 
       // Pagination Logic
       const startIdx = page * itemsPerPage;
@@ -74,7 +75,7 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
         const offsetX = col * chartW;
         const offsetY = row * chartH;
 
-        if (i === 0) {
+        if (showAccuracyPlot && i === 0) {
           // --- PLOT 0: ACCURACY OVER STEP ---
           const xMax = Math.max(10, history.length - 1);
           charts.push({
@@ -89,7 +90,7 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
             showYAxis: true
           });
 
-        } else if (i === 1) {
+        } else if ((showAccuracyPlot && i === 1) || (!showAccuracyPlot && i === 0)) {
           // --- PLOT 1: ERROR OVER STEP ---
           const xMax = Math.max(10, history.length - 1);
           charts.push({
@@ -106,7 +107,7 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
         } else {
           // --- PLOT 2..N: PARAM OVER ERROR ---
-          const paramIdx = i - 2; // Shift indices back
+          const paramIdx = i - basePlots; // Shift indices back
           const cfg = paramsConfig[paramIdx];
 
           const values = history.map(h => h.params[paramIdx]);
@@ -128,8 +129,8 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
 
     } else {
       // Legacy Mode (Phase 1 & 2)
-      // Charts: Accuracy vs Step, Error vs Step, Weight vs Error, Bias vs Error
-      // 2x2 Layout
+      // Charts: (optional) Accuracy vs Step, Error vs Step, Weight vs Error, Bias vs Error
+      // Layout: 2x2 if showing accuracy, otherwise show 3 charts in 2x2 grid.
       const chartW = width / 2;
       const chartH = height / 2;
 
@@ -137,28 +138,33 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       const valuesB = history.map(h => h.bias);
       const xMaxStep = Math.max(10, history.length - 1);
 
-      charts = [
-        {
+      charts = [];
+
+      if (showAccuracyPlot) {
+        charts.push({
           type: 'accuracy_step', xLabel: 'Accuracy', xMin: 0, xMax: xMaxStep,
           yMode: 'accuracy', getValue: (h, idx) => idx, getYValue: (h) => h.accuracy || 0,
           offsetX: 0, offsetY: 0, w: chartW, h: chartH, showYAxis: true
-        },
+        });
+      }
+
+      charts.push(
         {
           type: 'error_step', xLabel: 'Step', xMin: 0, xMax: xMaxStep,
           yMode: 'error_log', getValue: (h, idx) => idx, getYValue: (h) => h.error,
-          offsetX: chartW, offsetY: 0, w: chartW, h: chartH, showYAxis: true
+          offsetX: showAccuracyPlot ? chartW : 0, offsetY: 0, w: chartW, h: chartH, showYAxis: true
         },
         {
           xLabel: 'Weight', xMin: Math.min(...valuesW), xMax: Math.max(...valuesW),
           yMode: 'error_log', getValue: (h) => h.weight, getYValue: (h) => h.error,
-          offsetX: 0, offsetY: chartH, w: chartW, h: chartH
+          offsetX: showAccuracyPlot ? 0 : chartW, offsetY: showAccuracyPlot ? chartH : 0, w: chartW, h: chartH
         },
         {
           xLabel: 'Bias', xMin: Math.min(...valuesB), xMax: Math.max(...valuesB),
           yMode: 'error_log', getValue: (h) => h.bias, getYValue: (h) => h.error,
-          offsetX: chartW, offsetY: chartH, w: chartW, h: chartH
+          offsetX: showAccuracyPlot ? chartW : 0, offsetY: chartH, w: chartW, h: chartH
         }
-      ];
+      );
     }
 
     // --- DRAWING LOOP ---

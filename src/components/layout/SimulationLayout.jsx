@@ -188,6 +188,7 @@ export function SimulationLayout({
                                             currentStepIndex={trainingStepIndex}
                                             isTraining={isTraining}
                                             paramsConfig={simConfig.trainingConfig.params}
+                                            showAccuracyPlot={simConfig.trainingConfig?.showAccuracyPlot ?? true}
                                         />
                                     ) : (
                                         <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
