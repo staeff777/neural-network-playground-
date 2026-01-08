@@ -39,6 +39,7 @@ export function ControlPanel({
       >
         <select
           value={trainerType}
+          aria-label="Trainer Type"
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
           style={{
