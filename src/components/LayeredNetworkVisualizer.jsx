@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { getPlaygroundOptions } from '../lib/options.js';
 
-export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, outputLabel, formula }) {
+export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, outputLabel, formula, collapseModelArchitectureByDefault }) {
     if (!model || !model.getTopology) return null;
 
     const topology = model.getTopology();
@@ -17,6 +18,11 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
     // State for interactions
     const [selectedNode, setSelectedNode] = useState(null); // { layer: 0/1/2, index: number }
     const [showMatrices, setShowMatrices] = useState(false);
+    const resolvedCollapseByDefault =
+        typeof collapseModelArchitectureByDefault === 'boolean'
+            ? collapseModelArchitectureByDefault
+            : getPlaygroundOptions().collapseModelArchitectureByDefault;
+    const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
 
     // Config
     const width = 400;
@@ -138,14 +144,16 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                     width={boxWidth}
                     height={boxHeight}
                     rx="15"
-                    fill="none"
+                    fill="transparent"
                     stroke="#333"
                     strokeWidth="2"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setShowDetails((v) => !v)}
                 />
 
                 {/* CONNECTIONS */}
                 {/* Layer 0 -> 1 (Weights 1) */}
-                {weights1.map((row, j) => (
+                {showDetails && weights1.map((row, j) => (
                     row.map((w, i) => {
                         const highlighted = isConnHighlighted(0, i, 1, j);
                         const faded = selectedNode && !highlighted;
@@ -173,7 +181,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                 ))}
 
                 {/* Layer 1 -> 2 (Weights 2) */}
-                {weights2.map((w, j) => {
+                {showDetails && weights2.map((w, j) => {
                     const highlighted = isConnHighlighted(1, j, 2, 0);
                     const faded = selectedNode && !highlighted;
 
@@ -195,7 +203,9 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                 })}
 
                 {/* NODES */}
-                {layers.map((layer, lIdx) => (
+                {(showDetails ? layers : [layers[0], layers[2]]).map((layer, lIdxFromVisible) => {
+                    const lIdx = showDetails ? lIdxFromVisible : (lIdxFromVisible === 0 ? 0 : 2);
+                    return (
                     <g key={`layer-${lIdx}`}>
                         {Array.from({ length: layer.count }).map((_, nIdx) => {
                             const x = layer.x;
@@ -218,6 +228,22 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                                         strokeWidth={isSelected ? "3" : "2"}
                                         style={{ transition: 'all 0.3s ease' }}
                                     />
+
+                                    {/* Show numeric values when collapsed */}
+                                    {!showDetails && (lIdx === 0 || lIdx === 2) && (
+                                        <text
+                                            x={x}
+                                            y={y + 3}
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            fontSize="8"
+                                            fontWeight="600"
+                                            fill="#333"
+                                            style={{ pointerEvents: 'none' }}
+                                        >
+                                            {Number.isFinite(val) ? val.toFixed(2) : '0.00'}
+                                        </text>
+                                    )}
 
                                     {/* Inner Value Dot (optional visualization of activation?) 
                                         Let's keep it simple for now as requested "remove coloring of neurons" 
@@ -256,12 +282,13 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                             );
                         })}
                     </g>
-                ))}
+                );
+                })}
 
                 {/* Legend removed as colors are removed */}
 
                 {/* Formula - Clickable to toggle matrix view */}
-                {formula && (
+                {showDetails && formula && (
                     <foreignObject className="formula" x={centerX - 200} y={height - 25} width={400} height={20}>
                         <div
                             style={{

@@ -1,4 +1,6 @@
 import { LayeredNetworkVisualizer } from "./LayeredNetworkVisualizer";
+import { useState } from "react";
+import { getPlaygroundOptions } from "../lib/options.js";
 
 export function NetworkVisualizer({
   input, // can be number or array
@@ -11,7 +13,14 @@ export function NetworkVisualizer({
   biasLabel = "b",
   decimals = 1,
   model = null,
+  collapseModelArchitectureByDefault,
 }) {
+  const resolvedCollapseByDefault =
+    typeof collapseModelArchitectureByDefault === "boolean"
+      ? collapseModelArchitectureByDefault
+      : getPlaygroundOptions().collapseModelArchitectureByDefault;
+  const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
+
   if (model && model.getTopology) {
     // Normalize inputs
     let rawInput = input;
@@ -35,6 +44,7 @@ export function NetworkVisualizer({
         output={output}
         outputLabel={outputLabel}
         formula={formula}
+        collapseModelArchitectureByDefault={collapseModelArchitectureByDefault}
       />
     );
   }
@@ -132,9 +142,11 @@ export function NetworkVisualizer({
           width={boxWidth}
           height={boxHeight}
           rx="15"
-          fill="none"
+          fill="transparent"
           stroke="#333"
           strokeWidth="2"
+          style={{ cursor: "pointer" }}
+          onClick={() => setShowDetails((v) => !v)}
         />
 
         {/* Converge point for weights */}
@@ -152,40 +164,44 @@ export function NetworkVisualizer({
 
                 return (
                   <g key={i}>
-                    {/* Line to Sum Point */}
-                    <line
-                      x1={boxLeft}
-                      y1={y}
-                      x2={sumPointX}
-                      y2={centerY}
-                      stroke="#666"
-                      strokeWidth="1"
-                    />
+                    {showDetails && (
+                      <>
+                        {/* Line to Sum Point */}
+                        <line
+                          x1={boxLeft}
+                          y1={y}
+                          x2={sumPointX}
+                          y2={centerY}
+                          stroke="#666"
+                          strokeWidth="1"
+                        />
 
-                    {/* Weight Label - positioned along the line */}
-                    <g
-                      transform={`translate(${(boxLeft + sumPointX) / 2 + (1 - (numInputs - 1) / 2) * 5}, ${(y + centerY) / 2})`}
-                    >
-                      <rect
-                        x="-24"
-                        y="-8"
-                        width="50"
-                        height="18"
-                        fill="#fff"
-                        rx="4"
-                        stroke="#e0e0e0"
-                      />
-                      <text
-                        x="0"
-                        y="5"
-                        textAnchor="middle"
-                        fill="#e74c3c"
-                        fontSize="10"
-                        fontWeight="bold"
-                      >
-                        {wVal.toFixed(1)}
-                      </text>
-                    </g>
+                        {/* Weight Label - positioned along the line */}
+                        <g
+                          transform={`translate(${(boxLeft + sumPointX) / 2 + (1 - (numInputs - 1) / 2) * 5}, ${(y + centerY) / 2})`}
+                        >
+                          <rect
+                            x="-24"
+                            y="-8"
+                            width="50"
+                            height="18"
+                            fill="#fff"
+                            rx="4"
+                            stroke="#e0e0e0"
+                          />
+                          <text
+                            x="0"
+                            y="5"
+                            textAnchor="middle"
+                            fill="#e74c3c"
+                            fontSize="10"
+                            fontWeight="bold"
+                          >
+                            {wVal.toFixed(1)}
+                          </text>
+                        </g>
+                      </>
+                    )}
 
                     {/* Input Node */}
                     <circle
@@ -238,84 +254,88 @@ export function NetworkVisualizer({
                 );
               })}
 
-              {/* Sum Point to Activation */}
-              <line
-                x1={sumPointX}
-                y1={centerY}
-                x2={activationX}
-                y2={centerY}
-                stroke="#666"
-                strokeWidth="1"
-              />
+              {showDetails && (
+                <>
+                  {/* Sum Point to Activation */}
+                  <line
+                    x1={sumPointX}
+                    y1={centerY}
+                    x2={activationX}
+                    y2={centerY}
+                    stroke="#666"
+                    strokeWidth="1"
+                  />
 
-              {/* Activation Node */}
-              <g transform={`translate(${activationX}, ${centerY})`}>
-                <rect
-                  x="-18"
-                  y="-18"
-                  width="36"
-                  height="36"
-                  rx="6"
-                  fill="#fff"
-                  stroke="#333"
-                  strokeWidth="2"
-                />
-                {/* Sigmoid-ish curve */}
-                <path
-                  d="M -10 8 C -4 8, -4 -8, 10 -8"
-                  stroke="#333"
-                  strokeWidth="2"
-                  fill="none"
-                />
-              </g>
+                  {/* Activation Node */}
+                  <g transform={`translate(${activationX}, ${centerY})`}>
+                    <rect
+                      x="-18"
+                      y="-18"
+                      width="36"
+                      height="36"
+                      rx="6"
+                      fill="#fff"
+                      stroke="#333"
+                      strokeWidth="2"
+                    />
+                    {/* Sigmoid-ish curve */}
+                    <path
+                      d="M -10 8 C -4 8, -4 -8, 10 -8"
+                      stroke="#333"
+                      strokeWidth="2"
+                      fill="none"
+                    />
+                  </g>
 
-              {/* Activation to Output */}
-              {/* Line starts from right edge of activation box (x+18) to left edge of output circle (boxRight - circleRadius) */}
-              <line
-                x1={activationX + 18}
-                y1={centerY}
-                x2={boxRight - circleRadius}
-                y2={centerY}
-                stroke="#333"
-                strokeWidth="2"
-              />
+                  {/* Activation to Output */}
+                  {/* Line starts from right edge of activation box (x+18) to left edge of output circle (boxRight - circleRadius) */}
+                  <line
+                    x1={activationX + 18}
+                    y1={centerY}
+                    x2={boxRight - circleRadius}
+                    y2={centerY}
+                    stroke="#333"
+                    strokeWidth="2"
+                  />
 
-              {/* Bias to Sum Point */}
-              <path
-                d={`M ${activationX - 20} ${biasY} Q ${activationX - 20} ${centerY} ${sumPointX + 10} ${centerY}`}
-                fill="none"
-                stroke="#f39c12"
-                strokeWidth="1"
-              />
-              <circle
-                cx={activationX - 20}
-                cy={biasY}
-                r={12}
-                fill="#f1c40f"
-                stroke="#f39c12"
-              />
-              <text
-                x={activationX - 20}
-                y={biasY + 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize="12"
-                fontWeight="bold"
-                fill="#fff"
-              >
-                b
-              </text>
-              <text
-                x={activationX - 2}
-                y={biasY + 1}
-                textAnchor="start"
-                dominantBaseline="middle"
-                fontSize="12"
-                fill="#f39c12"
-                fontWeight="bold"
-              >
-                {bVal.toFixed(2)}
-              </text>
+                  {/* Bias to Sum Point */}
+                  <path
+                    d={`M ${activationX - 20} ${biasY} Q ${activationX - 20} ${centerY} ${sumPointX + 10} ${centerY}`}
+                    fill="none"
+                    stroke="#f39c12"
+                    strokeWidth="1"
+                  />
+                  <circle
+                    cx={activationX - 20}
+                    cy={biasY}
+                    r={12}
+                    fill="#f1c40f"
+                    stroke="#f39c12"
+                  />
+                  <text
+                    x={activationX - 20}
+                    y={biasY + 2}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="12"
+                    fontWeight="bold"
+                    fill="#fff"
+                  >
+                    b
+                  </text>
+                  <text
+                    x={activationX - 2}
+                    y={biasY + 1}
+                    textAnchor="start"
+                    dominantBaseline="middle"
+                    fontSize="12"
+                    fill="#f39c12"
+                    fontWeight="bold"
+                  >
+                    {bVal.toFixed(2)}
+                  </text>
+                </>
+              )}
             </>
           );
         })()}
@@ -364,28 +384,30 @@ export function NetworkVisualizer({
         </text>
 
         {/* Formula */}
-        <foreignObject
-          className="formula"
-          x={centerX - 200}
-          y={svgHeight - 25}
-          width={400}
-          height={20}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-              height: "100%",
-              fontSize: "18px",
-              fontStyle: "italic",
-              color: "#777",
-            }}
+        {showDetails && (
+          <foreignObject
+            className="formula"
+            x={centerX - 200}
+            y={svgHeight - 25}
+            width={400}
+            height={20}
           >
-            {formula}
-          </div>
-        </foreignObject>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                height: "100%",
+                fontSize: "18px",
+                fontStyle: "italic",
+                color: "#777",
+              }}
+            >
+              {formula}
+            </div>
+          </foreignObject>
+        )}
       </svg>
     </div>
   );
