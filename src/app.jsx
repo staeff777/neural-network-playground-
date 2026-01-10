@@ -56,13 +56,47 @@ export function App() {
       <header>
         <h1>Neural Network Demonstrator</h1>
         <p>{getValidationTitle(simId)}</p>
-        <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-          <a href="?sim=linear_regression" style={{ marginRight: '10px', fontWeight: simId === 'linear_regression' ? 'bold' : 'normal' }}>Phase 1 (Linear)</a>
-          <a href="?sim=logistic_regression" style={{ marginRight: '10px', fontWeight: simId === 'logistic_regression' ? 'bold' : 'normal' }}>Phase 2 (Logistic)</a>
-          <a href="?sim=multiple_inputs" style={{ marginRight: '10px', fontWeight: simId === 'multiple_inputs' ? 'bold' : 'normal' }}>Phase 3 (Multi)</a>
-          <a href="?sim=single_layer_nonlinear" style={{ marginRight: '10px', fontWeight: simId === 'single_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear 1)</a>
-          <a href="?sim=double_layer_nonlinear" style={{ fontWeight: simId === 'double_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 5 (Nonlinear 2)</a>
-        </div>
+        <nav
+          className="sim-selector"
+          aria-label="Phase Navigation"
+          style={{ fontSize: '0.8rem', marginTop: '5px' }}
+        >
+          <a
+            href="?sim=linear_regression"
+            style={{ marginRight: '10px', fontWeight: simId === 'linear_regression' ? 'bold' : 'normal' }}
+            aria-current={simId === 'linear_regression' ? 'page' : undefined}
+          >
+            Phase 1 (Linear)
+          </a>
+          <a
+            href="?sim=logistic_regression"
+            style={{ marginRight: '10px', fontWeight: simId === 'logistic_regression' ? 'bold' : 'normal' }}
+            aria-current={simId === 'logistic_regression' ? 'page' : undefined}
+          >
+            Phase 2 (Logistic)
+          </a>
+          <a
+            href="?sim=multiple_inputs"
+            style={{ marginRight: '10px', fontWeight: simId === 'multiple_inputs' ? 'bold' : 'normal' }}
+            aria-current={simId === 'multiple_inputs' ? 'page' : undefined}
+          >
+            Phase 3 (Multi)
+          </a>
+          <a
+            href="?sim=single_layer_nonlinear"
+            style={{ marginRight: '10px', fontWeight: simId === 'single_layer_nonlinear' ? 'bold' : 'normal' }}
+            aria-current={simId === 'single_layer_nonlinear' ? 'page' : undefined}
+          >
+            Phase 4 (Nonlinear 1)
+          </a>
+          <a
+            href="?sim=double_layer_nonlinear"
+            style={{ fontWeight: simId === 'double_layer_nonlinear' ? 'bold' : 'normal' }}
+            aria-current={simId === 'double_layer_nonlinear' ? 'page' : undefined}
+          >
+            Phase 5 (Nonlinear 2)
+          </a>
+        </nav>
       </header>
 
       <main style={{ height: '100%' }}>
