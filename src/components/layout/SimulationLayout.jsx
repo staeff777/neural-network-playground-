@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import { TrainingVisualizer } from '../TrainingVisualizer';
 import { NetworkVisualizer } from '../NetworkVisualizer';
 import { ControlPanel } from '../ControlPanel';
@@ -15,6 +15,9 @@ export function SimulationLayout({
     simulationEnabled = true,
     customDataHandling = false // New prop
 }) {
+    const TOP_SECTION_MIN_HEIGHT_PX = 500;
+    const TOP_SECTION_BOTTOM_GAP_PX = 20;
+
     const {
         simConfig,
         activeTab,
@@ -40,8 +43,50 @@ export function SimulationLayout({
 
     // Maximize Logic
     const [maximizedPanel, setMaximizedPanel] = useState(null);
+    const layoutRef = useRef(null);
+    const topSectionRef = useRef(null);
+    const controlPanelRef = useRef(null);
+    const [lockedTopSectionHeight, setLockedTopSectionHeight] = useState(null);
+    const [controlPanelHeight, setControlPanelHeight] = useState(0);
+    const [layoutHeight, setLayoutHeight] = useState(0);
+
+    useEffect(() => {
+        const measure = () => {
+            const nextLayoutH = layoutRef.current?.offsetHeight ?? 0;
+            const nextControlH = controlPanelRef.current?.offsetHeight ?? 0;
+            setLayoutHeight(nextLayoutH);
+            setControlPanelHeight(nextControlH);
+        };
+        measure();
+        window.addEventListener('resize', measure);
+        return () => window.removeEventListener('resize', measure);
+    }, []);
+
     const toggleMaximize = (panel) => {
-        setMaximizedPanel(prev => prev === panel ? null : panel);
+        setMaximizedPanel(prev => {
+            const next = prev === panel ? null : panel;
+            // Lock the current pixel height while a panel is maximized so embedding contexts
+            // (e.g., Reveal.js slides that auto-size/scale based on content) don't reflow vertically.
+            if (next && !prev) {
+                const measuredTopH = topSectionRef.current?.offsetHeight;
+                const measuredLayoutH = layoutRef.current?.offsetHeight;
+                const measuredControlH = controlPanelRef.current?.offsetHeight;
+                const availableTopH =
+                    typeof measuredLayoutH === 'number' && measuredLayoutH > 0
+                        ? Math.max(0, measuredLayoutH - (measuredControlH || 0) - TOP_SECTION_BOTTOM_GAP_PX)
+                        : null;
+
+                if (typeof measuredTopH === 'number' && measuredTopH > 0) {
+                    const nextLocked = typeof availableTopH === 'number'
+                        ? Math.min(measuredTopH, availableTopH)
+                        : measuredTopH;
+                    setLockedTopSectionHeight(nextLocked);
+                }
+            } else if (!next) {
+                setLockedTopSectionHeight(null);
+            }
+            return next;
+        });
     };
 
     const maximizeBtnStyle = {
@@ -73,18 +118,30 @@ export function SimulationLayout({
     const inputToUse = currentInput !== undefined ? currentInput : (simConfig.getInput ? simConfig.getInput(time) : time);
     const vizProps = simConfig.networkViz || {};
 
+    const computedTopSectionHeight =
+        lockedTopSectionHeight
+            ? `${lockedTopSectionHeight}px`
+            : (layoutHeight > 0 ? `calc(${layoutHeight}px - ${controlPanelHeight}px - ${TOP_SECTION_BOTTOM_GAP_PX}px)` : 'auto');
+
+    const topSectionHeight = maximizedPanel ? computedTopSectionHeight : 'auto';
+
     return (
-        <div className="nn-demonstrator layout-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div
+            ref={layoutRef}
+            className="nn-demonstrator layout-container"
+            style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}
+        >
             {/* Top Section: Simulation & Network */}
-            <div className="top-section" style={{
+            <div ref={topSectionRef} className="top-section" style={{
                 display: 'flex',
                 gap: maximizedPanel ? '0px' : '20px',
                 flexWrap: 'nowrap',
                 alignItems: 'stretch',
-                height: maximizedPanel ? 'calc(100vh - 200px)' : 'auto',
-                minHeight: '500px',
+                height: topSectionHeight,
+                minHeight: lockedTopSectionHeight ? 0 : `${TOP_SECTION_MIN_HEIGHT_PX}px`,
+                overflow: maximizedPanel ? 'hidden' : 'visible',
                 transition: panelTransition,
-                marginBottom: '20px'
+                marginBottom: `${TOP_SECTION_BOTTOM_GAP_PX}px`
             }}>
 
                 {/* --- Simulation Wrapper --- */}
@@ -96,7 +153,8 @@ export function SimulationLayout({
                     transition: panelTransition,
                     position: 'relative',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    minHeight: 0,
                 }}>
                     <button
                         onClick={() => toggleMaximize('simulation')}
@@ -110,7 +168,7 @@ export function SimulationLayout({
                         )}
                     </button>
 
-                    <div className="simulation-section" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div className="simulation-section" style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         <div className="tabs" style={{ paddingRight: '120px' }}>
                             {simulationEnabled && (
                                 <button
@@ -146,7 +204,7 @@ export function SimulationLayout({
                             )}
 
                             {activeTab === 'data' && (
-                                <div className="data-content" style={{ flex: 1, overflowY: 'auto' }}>
+                                <div className="data-content" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                                     {customDataHandling ? (
                                         renderDataView ? renderDataView() : <p>No data view available.</p>
                                     ) : (
@@ -171,7 +229,6 @@ export function SimulationLayout({
                                                         data={trainingData}
                                                         vizProps={vizProps}
                                                         simConfig={simConfig}
-                                                        maximizedPanel={maximizedPanel}
                                                     />
                                                 )}
                                             </div>
@@ -181,7 +238,7 @@ export function SimulationLayout({
                             )}
 
                             {activeTab === 'training' && (
-                                <div className="training-content" style={{ flex: 1 }}>
+                                <div className="training-content" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
                                     {trainingHistory.length > 0 ? (
                                         <TrainingVisualizer
                                             history={trainingHistory}
@@ -210,7 +267,8 @@ export function SimulationLayout({
                     transition: panelTransition,
                     position: 'relative',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    minHeight: 0,
                 }}>
                     <button
                         onClick={() => toggleMaximize('network')}
@@ -242,19 +300,21 @@ export function SimulationLayout({
 
             </div>
 
-            <ControlPanel
-                onTrain={handleTrain}
-                onRun={handleRun}
+            <div ref={controlPanelRef} style={{ flex: '0 0 auto' }}>
+                <ControlPanel
+                    onTrain={handleTrain}
+                    onRun={handleRun}
 
-                isTraining={isTraining}
-                trainingStep={trainingStepIndex}
-                dataCount={trainingData.length}
-                trainerType={trainerType}
-                onTrainerTypeChange={setTrainerType}
-                simConfig={simConfig}
-                isRunning={isRunning}
-                simulationEnabled={simulationEnabled}
-            />
+                    isTraining={isTraining}
+                    trainingStep={trainingStepIndex}
+                    dataCount={trainingData.length}
+                    trainerType={trainerType}
+                    onTrainerTypeChange={setTrainerType}
+                    simConfig={simConfig}
+                    isRunning={isRunning}
+                    simulationEnabled={simulationEnabled}
+                />
+            </div>
         </div>
     );
 }
