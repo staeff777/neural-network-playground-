@@ -229,22 +229,6 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                                         style={{ transition: 'all 0.3s ease' }}
                                     />
 
-                                    {/* Show numeric values when collapsed */}
-                                    {!showDetails && (lIdx === 0 || lIdx === 2) && (
-                                        <text
-                                            x={x}
-                                            y={y + 3}
-                                            textAnchor="middle"
-                                            dominantBaseline="middle"
-                                            fontSize="8"
-                                            fontWeight="600"
-                                            fill="#333"
-                                            style={{ pointerEvents: 'none' }}
-                                        >
-                                            {Number.isFinite(val) ? val.toFixed(2) : '0.00'}
-                                        </text>
-                                    )}
-
                                     {/* Inner Value Dot (optional visualization of activation?) 
                                         Let's keep it simple for now as requested "remove coloring of neurons" 
                                         But maybe a small text or just the clean colored circle is enough.

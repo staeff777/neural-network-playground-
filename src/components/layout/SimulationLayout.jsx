@@ -235,6 +235,7 @@ export function SimulationLayout({
                             outputLabel={vizProps.outputLabel}
                             biasLabel={vizProps.biasLabel}
                             decimals={simConfig.id.includes('spam') ? 0 : 1}
+                            showActivation={vizProps.showActivation}
                         />
                     </div>
                 </div>

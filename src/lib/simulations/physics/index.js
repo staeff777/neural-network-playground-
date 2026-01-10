@@ -40,6 +40,7 @@ export const config = {
     formula: 'pos = w * t + b',
     inputLabel: 'Zeit (t)',
     outputLabel: 'Pos (m)',
-    biasLabel: 'b'
+    biasLabel: 'b',
+    showActivation: false
   }
 };

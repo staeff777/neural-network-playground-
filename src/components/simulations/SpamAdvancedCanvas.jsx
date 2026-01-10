@@ -3,9 +3,8 @@ import { getNiceTicks } from '../../utils/graphUtils';
 
 export const DEFAULT_FEATURES = [
     { label: "Spam Words", idx: 0, max: 15 },
-    { label: "Capitals", idx: 1, max: 25 },
-    { label: "Links", idx: 2, max: 8 },
-    { label: "Total Words", idx: 3, max: 100 }
+    { label: "Links", idx: 1, max: 8 },
+    { label: "Total Words", idx: 2, max: 100 }
 ];
 
 export function SpamAdvancedCanvas({
@@ -19,19 +18,50 @@ export function SpamAdvancedCanvas({
     additionalControls = null,
     features = DEFAULT_FEATURES
 }) {
+    const normalizeAxis = (idx) => {
+        const n = features.length;
+        if (!Number.isFinite(idx) || n <= 0) return 0;
+        return Math.max(0, Math.min(n - 1, idx));
+    };
+
+    const ensureDistinctAxes3d = (nextX, nextY, nextZ) => {
+        const n = features.length;
+        const x = normalizeAxis(nextX);
+        const y0 = normalizeAxis(nextY);
+        const z0 = normalizeAxis(nextZ);
+
+        if (n < 3) return { x, y: y0, z: z0 };
+
+        const used = new Set([x]);
+        let y = y0;
+        if (used.has(y)) {
+            y = Array.from({ length: n }, (_, i) => i).find(i => !used.has(i)) ?? y;
+        }
+        used.add(y);
+
+        let z = z0;
+        if (used.has(z)) {
+            z = Array.from({ length: n }, (_, i) => i).find(i => !used.has(i)) ?? z;
+        }
+
+        return { x, y, z };
+    };
+
     const canvasRef = useRef(null);
-    const [viewMode, setViewMode] = useState(allowedModes[0]);
+    const effectiveAllowedModes = allowedModes.filter(mode => mode !== '3d' || features.length >= 3);
+    const initialViewMode = effectiveAllowedModes[0] ?? allowedModes[0];
+    const [viewMode, setViewMode] = useState(initialViewMode);
 
     useEffect(() => {
-        if (!allowedModes.includes(viewMode)) {
-            setViewMode(allowedModes[0]);
+        if (!effectiveAllowedModes.includes(viewMode)) {
+            setViewMode(effectiveAllowedModes[0] ?? allowedModes[0]);
         }
-    }, [allowedModes]);
+    }, [effectiveAllowedModes, allowedModes, viewMode]);
 
     const [xAxis, setXAxis] = useState(0);
-    // Smart default: If limited features (Phase 4/5), pick the second one. Otherwise keep legacy default (3).
-    const [yAxis, setYAxis] = useState(features.length === 2 ? 1 : 3);
-    const [zAxis, setZAxis] = useState(2);
+    // Smart defaults: choose the last feature for Y (or 1 if only 2), and feature 2 for Z when available.
+    const [yAxis, setYAxis] = useState(features.length > 1 ? 1 : 0);
+    const [zAxis, setZAxis] = useState(features.length > 2 ? 2 : (features.length > 1 ? 1 : 0));
     // Background Grid State
     const [showGrid, setShowGrid] = useState(false);
 
@@ -152,6 +182,16 @@ export function SpamAdvancedCanvas({
         }
         lastClickRef.current = now;
     };
+
+    useEffect(() => {
+        if (viewMode !== '3d') return;
+        const next = ensureDistinctAxes3d(xAxis, yAxis, zAxis);
+        const changed = next.x !== xAxis || next.y !== yAxis || next.z !== zAxis;
+        if (!changed) return;
+        setXAxis(next.x);
+        setYAxis(next.y);
+        setZAxis(next.z);
+    }, [features.length, viewMode, xAxis, yAxis, zAxis]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -565,45 +605,6 @@ export function SpamAdvancedCanvas({
                 });
             }
 
-            // --- DRAW DECISION LINE (2D) ---
-            if (showModel && neuralNet) {
-                let weights = neuralNet.weights;
-                const bias = neuralNet.bias || 0;
-
-                if (weights) {
-                    const wX = weights[xAxis] || 0;
-                    const wY = weights[yAxis] || 0;
-                    const b = bias;
-
-                    ctx.beginPath();
-                    ctx.strokeStyle = 'rgba(142, 68, 173, 0.8)';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([10, 5]);
-
-                    const bigMin = visXMin - (visXMax - visXMin);
-                    const bigMax = visXMax + (visXMax - visXMin);
-                    const toPix = (valX, valY) => ({ x: mapX(valX), y: mapY(valY) });
-
-                    if (Math.abs(wY) > 0.001) {
-                        const f = (x) => (-wX * x - b) / wY;
-                        const p1 = toPix(bigMin, f(bigMin));
-                        const p2 = toPix(bigMax, f(bigMax));
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
-                    }
-                    else if (Math.abs(wX) > 0.001) {
-                        const xVal = -b / wX;
-                        const p1 = toPix(xVal, visYMin - 100);
-                        const p2 = toPix(xVal, visYMax + 100);
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
-                    }
-
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                }
-            }
-
             if (currentInput) {
                 drawPoint(currentInput, '#3498db', 8, '#2980b9');
             }
@@ -679,15 +680,20 @@ export function SpamAdvancedCanvas({
         // --- FEATURE HISTOGRAMS MODE ---
         if (viewMode === 'features') {
             const pad = 30;
-            const w = (width - 3 * pad) / 2;
-            const h = (height - 3 * pad) / 2;
+            const cols = 2;
+            const rows = Math.max(1, Math.ceil(features.length / cols));
+            const w = (width - (cols + 1) * pad) / cols;
+            const h = (height - (rows + 1) * pad) / rows;
 
-            const plots = [
-                { x: pad, y: pad, ...features[0] },
-                { x: pad + w + pad, y: pad, ...features[1] },
-                { x: pad, y: pad + h + pad, ...features[2] },
-                { x: pad + w + pad, y: pad + h + pad, ...features[3] }
-            ];
+            const plots = features.map((feature, index) => {
+                const col = index % cols;
+                const row = Math.floor(index / cols);
+                return {
+                    x: pad + col * (w + pad),
+                    y: pad + row * (h + pad),
+                    ...feature
+                };
+            });
 
             plots.forEach(plot => {
                 ctx.strokeStyle = '#ccc';
@@ -837,7 +843,7 @@ export function SpamAdvancedCanvas({
                     </div>
                     <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                         <select value={viewMode} onChange={e => setViewMode(e.target.value)} style={{ padding: '4px' }}>
-                            {allowedModes.map(mode => (
+                            {effectiveAllowedModes.map(mode => (
                                 <option key={mode} value={mode}>{viewLabels[mode]}</option>
                             ))}
                         </select>

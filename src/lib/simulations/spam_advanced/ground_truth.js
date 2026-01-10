@@ -11,8 +11,9 @@ export class SpamAdvancedTruth {
   // Returns true (1) or false (0) based on probability
   classify(inputs) {
     let z = this.bias;
-    for(let i=0; i<this.weights.length; i++) {
-        z += this.weights[i] * inputs[i];
+    const safeLen = Math.min(this.weights.length, inputs?.length ?? 0);
+    for (let i = 0; i < safeLen; i++) {
+      z += this.weights[i] * inputs[i];
     }
     const probability = this.sigmoid(z);
 
@@ -22,8 +23,9 @@ export class SpamAdvancedTruth {
 
   getProbability(inputs) {
     let z = this.bias;
-    for(let i=0; i<this.weights.length; i++) {
-        z += this.weights[i] * inputs[i];
+    const safeLen = Math.min(this.weights.length, inputs?.length ?? 0);
+    for (let i = 0; i < safeLen; i++) {
+      z += this.weights[i] * inputs[i];
     }
     return this.sigmoid(z);
   }

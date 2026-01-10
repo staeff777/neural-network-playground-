@@ -358,7 +358,8 @@ export function TrainingVisualizer({ history, currentStepIndex, isTraining, para
       ctx.fillStyle = '#333';
       ctx.font = 'bold 18px sans-serif'; // Larger font
       ctx.textAlign = 'right';
-      ctx.fillText(`Min Error: ${minErr.toFixed(5)}`, width - 20, height - 20);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`Min Error: ${minErr.toFixed(5)}`, width - 20, height - 8);
     }
 
   }, [history, currentStepIndex, isTraining, paramsConfig, page]);

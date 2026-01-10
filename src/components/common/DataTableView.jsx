@@ -1,4 +1,4 @@
-export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
+export function DataTableView({ data, vizProps, simConfig }) {
     if (!data || data.length === 0) {
         return (
             <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
@@ -26,7 +26,7 @@ export function DataTableView({ data, vizProps, simConfig, maximizedPanel }) {
     };
 
     return (
-        <div style={{ maxHeight: maximizedPanel ? 'calc(100vh - 350px)' : '400px', overflowY: 'auto' }}>
+        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                     <tr style={{ background: '#eee', borderBottom: '2px solid #ddd' }}>

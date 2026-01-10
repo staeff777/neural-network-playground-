@@ -14,6 +14,7 @@ export function NetworkVisualizer({
   decimals = 1,
   model = null,
   collapseModelArchitectureByDefault,
+  showActivation = true,
 }) {
   const resolvedCollapseByDefault =
     typeof collapseModelArchitectureByDefault === "boolean"
@@ -98,10 +99,11 @@ export function NetworkVisualizer({
 
   // Internal Layout Positions
   // Output is at boxRight.
-  // Activation is to the left of Output.
+  // Activation is to the left of Output (optional).
   const activationX = boxRight - 50;
-  // Sum Point is to the left of Activation.
-  const sumPointX = activationX - 60;
+  // Sum Point is to the left of Activation (or to the left of Output if activation is hidden).
+  const sumPointX = (showActivation ? activationX : boxRight - circleRadius) - 60;
+  const biasNodeX = showActivation ? activationX - 20 : sumPointX;
 
   return (
     <div
@@ -256,64 +258,68 @@ export function NetworkVisualizer({
 
               {showDetails && (
                 <>
-                  {/* Sum Point to Activation */}
+                  {/* Sum Point to Activation (or Output for linear models) */}
                   <line
                     x1={sumPointX}
                     y1={centerY}
-                    x2={activationX}
+                    x2={showActivation ? activationX : boxRight - circleRadius}
                     y2={centerY}
                     stroke="#666"
                     strokeWidth="1"
                   />
 
-                  {/* Activation Node */}
-                  <g transform={`translate(${activationX}, ${centerY})`}>
-                    <rect
-                      x="-18"
-                      y="-18"
-                      width="36"
-                      height="36"
-                      rx="6"
-                      fill="#fff"
-                      stroke="#333"
-                      strokeWidth="2"
-                    />
-                    {/* Sigmoid-ish curve */}
-                    <path
-                      d="M -10 8 C -4 8, -4 -8, 10 -8"
-                      stroke="#333"
-                      strokeWidth="2"
-                      fill="none"
-                    />
-                  </g>
+                  {showActivation && (
+                    <>
+                      {/* Activation Node */}
+                      <g transform={`translate(${activationX}, ${centerY})`}>
+                        <rect
+                          x="-18"
+                          y="-18"
+                          width="36"
+                          height="36"
+                          rx="6"
+                          fill="#fff"
+                          stroke="#333"
+                          strokeWidth="2"
+                        />
+                        {/* Sigmoid-ish curve */}
+                        <path
+                          d="M -10 8 C -4 8, -4 -8, 10 -8"
+                          stroke="#333"
+                          strokeWidth="2"
+                          fill="none"
+                        />
+                      </g>
 
-                  {/* Activation to Output */}
-                  {/* Line starts from right edge of activation box (x+18) to left edge of output circle (boxRight - circleRadius) */}
-                  <line
-                    x1={activationX + 18}
-                    y1={centerY}
-                    x2={boxRight - circleRadius}
-                    y2={centerY}
-                    stroke="#333"
-                    strokeWidth="2"
-                  />
+                      {/* Activation to Output */}
+                      {/* Line starts from right edge of activation box (x+18) to left edge of output circle (boxRight - circleRadius) */}
+                      <line
+                        x1={activationX + 18}
+                        y1={centerY}
+                        x2={boxRight - circleRadius}
+                        y2={centerY}
+                        stroke="#333"
+                        strokeWidth="2"
+                      />
+                    </>
+                  )}
 
                   {/* Bias to Sum Point */}
                   <path
-                    d={`M ${activationX - 20} ${biasY} Q ${activationX - 20} ${centerY} ${sumPointX + 10} ${centerY}`}
+                    d={`M ${biasNodeX} ${biasY} Q ${biasNodeX} ${centerY} ${sumPointX + 10} ${centerY}`}
                     fill="none"
                     stroke="#f39c12"
                     strokeWidth="1"
                   />
                   <circle
-                    cx={activationX - 20}
+                    cx={biasNodeX}
                     cy={biasY}
                     r={12}
                     fill="#f1c40f"
                     stroke="#f39c12"
                   />
                   <text
-                    x={activationX - 20}
+                    x={biasNodeX}
                     y={biasY + 2}
                     textAnchor="middle"
                     dominantBaseline="middle"
@@ -321,10 +327,10 @@ export function NetworkVisualizer({
                     fontWeight="bold"
                     fill="#fff"
                   >
-                    b
+                    {biasLabel}
                   </text>
                   <text
-                    x={activationX - 2}
+                    x={biasNodeX + 18}
                     y={biasY + 1}
                     textAnchor="start"
                     dominantBaseline="middle"

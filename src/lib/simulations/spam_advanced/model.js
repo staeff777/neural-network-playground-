@@ -1,5 +1,5 @@
 export class LogisticModelVector {
-  constructor(inputCount = 4) {
+  constructor(inputCount = 3) {
     this.weights = new Array(inputCount).fill(0);
     this.bias = 0;
   }
@@ -11,8 +11,9 @@ export class LogisticModelVector {
   predict(inputs) {
     // inputs is array of numbers
     let z = this.bias;
-    for(let i=0; i<this.weights.length; i++) {
-        z += this.weights[i] * inputs[i];
+    const safeLen = Math.min(this.weights.length, inputs?.length ?? 0);
+    for (let i = 0; i < safeLen; i++) {
+      z += this.weights[i] * inputs[i];
     }
     return this.sigmoid(z);
   }
