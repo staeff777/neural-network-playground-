@@ -4,7 +4,7 @@ import { SimulationLayout } from '../layout/SimulationLayout';
 import { DataViewSwitcher } from '../common/DataViewSwitcher';
 import { DataTableView } from '../common/DataTableView';
 
-export function SpamPhase() {
+export function SpamPhase({ collapseModelArchitectureByDefault } = {}) {
     const hookState = useSimulationRunner('logistic_regression');
     const { simConfig, trainingData, groundTruth, trainingHistory, neuralNet } = hookState;
 
@@ -72,6 +72,7 @@ export function SpamPhase() {
             hookState={hookState}
             renderSimulationView={renderSimulationView}
             renderDataView={renderDataView}
+            collapseModelArchitectureByDefault={collapseModelArchitectureByDefault}
             simulationEnabled={false}
             customDataHandling={true}
         />

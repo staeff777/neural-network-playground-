@@ -1,5 +1,10 @@
 import { BaseSpamAdvancedPhase } from './BaseSpamAdvancedPhase';
 
-export function SpamNonlinearPhase() {
-    return <BaseSpamAdvancedPhase simId="single_layer_nonlinear" />;
+export function SpamNonlinearPhase({ collapseModelArchitectureByDefault } = {}) {
+    return (
+        <BaseSpamAdvancedPhase
+            simId="single_layer_nonlinear"
+            collapseModelArchitectureByDefault={collapseModelArchitectureByDefault}
+        />
+    );
 }

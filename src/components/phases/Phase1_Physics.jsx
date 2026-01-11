@@ -4,7 +4,7 @@ import { PositionTimeGraph } from '../simulations/PositionTimeGraph';
 import { DataViewSwitcher } from '../common/DataViewSwitcher';
 import { DataTableView } from '../common/DataTableView';
 
-export function PhysicsPhase() {
+export function PhysicsPhase({ collapseModelArchitectureByDefault } = {}) {
     const hookState = useSimulationRunner('linear_regression');
     const { simConfig, trainingData, groundTruth, trainingHistory, neuralNet, time, currentInput } = hookState;
 
@@ -77,6 +77,7 @@ export function PhysicsPhase() {
             hookState={hookState}
             renderSimulationView={renderSimulationView}
             renderDataView={renderDataView}
+            collapseModelArchitectureByDefault={collapseModelArchitectureByDefault}
             customDataHandling={true}
         />
     );

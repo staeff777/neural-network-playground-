@@ -1,6 +1,6 @@
-import { SpamFilterTruth } from './ground_truth';
-import { LogisticModel } from './model';
-import { SpamCanvas } from '../../../components/simulations/SpamCanvas';
+import { SpamFilterTruth } from "./ground_truth";
+import { LogisticModel } from "./model";
+import { SpamCanvas } from "../../../components/simulations/SpamCanvas";
 
 // Pseudo-random generator for consistent "random" values based on time/seed
 const pseudoRand = (seed) => {
@@ -9,10 +9,12 @@ const pseudoRand = (seed) => {
 };
 
 export const config = {
-  id: 'logistic_regression',
+  id: "logistic_regression",
   // Previously "Phase 2: Spam Classification"
-  title: 'Phase 2: Logistic Regression',
-  description: 'Classification of emails as "Spam" or "Not Spam" based on word count. This is a logistic regression.',
+  title: "Phase 2: Logistic Regression",
+  description:
+    'Classification of emails as "Spam" or "Not Spam" based on word count. This is a logistic regression.',
+  collapseModelArchitectureByDefault: false,
   Model: LogisticModel,
   GroundTruth: SpamFilterTruth,
   CanvasComponent: SpamCanvas,
@@ -30,34 +32,34 @@ export const config = {
 
   generateData: (_groundTruth) => {
     const SPAM_WORDS = new Set([
-      'FREE',
-      'WIN',
-      'PRIZE',
-      'CLAIM',
-      'URGENT',
-      'OFFER',
-      'BONUS',
-      'CLICK',
-      'LINK',
-      'NOW',
-      'LIMITED',
-      'DISCOUNT',
-      'VERIFY',
-      'ACCOUNT',
-      'PAYMENT',
-      'SUSPENDED',
-      'APPROVED',
-      'CASH',
-      'REWARD',
-      'SECURITY',
-      'ALERT',
-      'ACT',
-      'TODAY'
+      "FREE",
+      "WIN",
+      "PRIZE",
+      "CLAIM",
+      "URGENT",
+      "OFFER",
+      "BONUS",
+      "CLICK",
+      "LINK",
+      "NOW",
+      "LIMITED",
+      "DISCOUNT",
+      "VERIFY",
+      "ACCOUNT",
+      "PAYMENT",
+      "SUSPENDED",
+      "APPROVED",
+      "CASH",
+      "REWARD",
+      "SECURITY",
+      "ALERT",
+      "ACT",
+      "TODAY",
     ]);
 
     const countSpamWords = (text) => {
       // Count only all-caps tokens so "Account" doesn't count but "ACCOUNT" does.
-      const tokens = String(text || '').match(/[A-Z0-9]+/g) || [];
+      const tokens = String(text || "").match(/[A-Z0-9]+/g) || [];
       let count = 0;
       for (const token of tokens) {
         if (SPAM_WORDS.has(token)) count++;
@@ -68,7 +70,7 @@ export const config = {
     const makeData = (text, target) => ({
       input: countSpamWords(text),
       target,
-      text
+      text,
     });
 
     const spamTokens = Array.from(SPAM_WORDS);
@@ -82,29 +84,31 @@ export const config = {
     };
 
     const subjectBase = [
-      'Project update',
-      'Quick question',
-      'Invoice follow up',
-      'Meeting schedule',
-      'Account notice',
-      'Delivery status',
-      'Action required',
-      'Weekly summary'
+      "Project update",
+      "Quick question",
+      "Invoice follow up",
+      "Meeting schedule",
+      "Account notice",
+      "Delivery status",
+      "Action required",
+      "Weekly summary",
     ];
 
     const bodyBase = [
-      'Hi, just following up. Could you take a look when you have a moment?',
-      'Hello, sharing the details below. Thanks for your time.',
-      'Hey, can you confirm receipt and let me know if anything is missing?',
-      'Hi, please review and reply when convenient. Appreciate it.',
-      'Hello, sending this over for your review. Thanks.'
+      "Hi, just following up. Could you take a look when you have a moment?",
+      "Hello, sharing the details below. Thanks for your time.",
+      "Hey, can you confirm receipt and let me know if anything is missing?",
+      "Hi, please review and reply when convenient. Appreciate it.",
+      "Hello, sending this over for your review. Thanks.",
     ];
 
     const makeEmailText = (spamWordCount, seed) => {
-      const subject = subjectBase[Math.floor(pseudoRand(seed + 11) * subjectBase.length)];
-      const body = bodyBase[Math.floor(pseudoRand(seed + 29) * bodyBase.length)];
+      const subject =
+        subjectBase[Math.floor(pseudoRand(seed + 11) * subjectBase.length)];
+      const body =
+        bodyBase[Math.floor(pseudoRand(seed + 29) * bodyBase.length)];
       const tokens = pickTokens(spamWordCount, seed + 101);
-      const keywordTail = tokens.length ? ` ${tokens.join(' ')}` : '';
+      const keywordTail = tokens.length ? ` ${tokens.join(" ")}` : "";
       return `Subject: ${subject}${keywordTail}\n${body}`;
     };
 
@@ -118,7 +122,9 @@ export const config = {
     const candidates = xs.map((x, idx) => {
       const seed = x * 1000 + idx;
       const text = makeEmailText(x, seed);
-      const probability = _groundTruth?.getProbability ? _groundTruth.getProbability(x) : 0;
+      const probability = _groundTruth?.getProbability
+        ? _groundTruth.getProbability(x)
+        : 0;
       const u = pseudoRand(seed + 999);
       return { x, idx, text, score: probability - u };
     });
@@ -129,29 +135,31 @@ export const config = {
       [...candidates]
         .sort((a, b) => b.score - a.score)
         .slice(0, 25)
-        .map((c) => c.idx)
+        .map((c) => c.idx),
     );
 
-    const data = candidates.map((c) => makeData(c.text, spamIdx.has(c.idx) ? 1 : 0));
+    const data = candidates.map((c) =>
+      makeData(c.text, spamIdx.has(c.idx) ? 1 : 0),
+    );
     return data.sort((a, b) => a.input - b.input);
   },
 
   trainingConfig: {
     maxSteps: 3000,
     params: [
-      { name: 'weight', min: 0, max: 2, step: 0.1 },
-      { name: 'bias', min: -10, max: 5, step: 0.5 }
-    ]
+      { name: "weight", min: 0, max: 2, step: 0.1 },
+      { name: "bias", min: -10, max: 5, step: 0.5 },
+    ],
   },
 
   networkViz: {
-    formula: 'p = σ(w * x + b)',
-    inputLabel: "Wörter (x)",
+    formula: "p = σ(w * x + b)",
+    inputLabel: "Spam Words",
     outputLabel: "Spam (p)",
-    biasLabel: "b"
+    biasLabel: "b",
   },
 
   // Simulation Control
   // 50 points total, speed is 2 points/sec
-  isFinished: (time) => time >= 25
+  isFinished: (time) => time >= 25,
 };

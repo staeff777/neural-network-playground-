@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { getPlaygroundOptions } from '../lib/options.js';
 
 export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, outputLabel, formula, collapseModelArchitectureByDefault }) {
     if (!model || !model.getTopology) return null;
@@ -21,7 +20,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
     const resolvedCollapseByDefault =
         typeof collapseModelArchitectureByDefault === 'boolean'
             ? collapseModelArchitectureByDefault
-            : getPlaygroundOptions().collapseModelArchitectureByDefault;
+            : false;
     const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
 
     // Config

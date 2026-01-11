@@ -7,6 +7,7 @@ export const config = {
   id: 'linear_regression',
   title: 'Phase 1: Linear Regression',
   description: 'A simple neuron learns the relationship between time and position. This corresponds to a linear regression.',
+  collapseModelArchitectureByDefault: true,
   Model: SimpleNeuralNet,
   GroundTruth: GroundTruth,
   CanvasComponent: PhysicsCanvas,

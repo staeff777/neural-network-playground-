@@ -3,7 +3,7 @@ import { SimulationLayout } from "../layout/SimulationLayout";
 import { DataViewSwitcher } from "../common/DataViewSwitcher";
 import { DataTableView } from "../common/DataTableView";
 
-export function BaseSpamAdvancedPhase({ simId }) {
+export function BaseSpamAdvancedPhase({ simId, collapseModelArchitectureByDefault }) {
   const hookState = useSimulationRunner(simId);
   const {
     simConfig,
@@ -115,6 +115,7 @@ export function BaseSpamAdvancedPhase({ simId }) {
       hookState={hookState}
       renderSimulationView={renderSimulationView}
       renderDataView={renderDataView}
+      collapseModelArchitectureByDefault={collapseModelArchitectureByDefault}
       simulationEnabled={false}
       customDataHandling={true}
     />

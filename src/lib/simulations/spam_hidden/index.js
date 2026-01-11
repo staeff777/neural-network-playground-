@@ -130,6 +130,7 @@ export const config = {
     id: 'double_layer_nonlinear',
     title: 'Phase 5: Double Layer Nonlinear Data',
     description: 'Spam detection with a Hidden Layer (10 neurons). The Deep Neural Network can detect the nonlinear distribution ("Spam Island").',
+    collapseModelArchitectureByDefault: false,
     Model: HiddenLayerModel,
     GroundTruth: SpamAdvancedTruth,
     CanvasComponent: SpamAdvancedCanvas,

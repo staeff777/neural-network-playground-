@@ -53,6 +53,7 @@ export const config = {
   title: "Phase 3: Multiple Inputs",
   description:
     "Advanced spam detection with multiple linear features (spam words, links, total words). The network learns a separation line.",
+  collapseModelArchitectureByDefault: false,
   Model: LogisticModelVector,
   GroundTruth: SpamAdvancedTruth,
   CanvasComponent: SpamAdvancedCanvas,
@@ -183,7 +184,7 @@ export const config = {
 
   networkViz: {
     formula: "p = σ(w₁x₁ + w₂x₂ + w₃x₃ + b)",
-    inputLabels: ["Spam Words", "Links", "Words (/50)"],
+    inputLabels: ["Spam Words", "Links", "Total Words"],
     outputLabel: "Spam (p)",
     biasLabel: "b",
   },

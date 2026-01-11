@@ -12,6 +12,7 @@ export function SimulationLayout({
     renderDataView,
     // Optional overrides
     networkVizProps = {},
+    collapseModelArchitectureByDefault,
     simulationEnabled = true,
     customDataHandling = false // New prop
 }) {
@@ -117,6 +118,10 @@ export function SimulationLayout({
     // Derived values
     const inputToUse = currentInput !== undefined ? currentInput : (simConfig.getInput ? simConfig.getInput(time) : time);
     const vizProps = simConfig.networkViz || {};
+    const collapseModelArchitectureResolved =
+        typeof collapseModelArchitectureByDefault === 'boolean'
+            ? collapseModelArchitectureByDefault
+            : simConfig.collapseModelArchitectureByDefault;
 
     const computedTopSectionHeight =
         lockedTopSectionHeight
@@ -294,6 +299,7 @@ export function SimulationLayout({
                             biasLabel={vizProps.biasLabel}
                             decimals={simConfig.id.includes('spam') ? 0 : 1}
                             showActivation={vizProps.showActivation}
+                            collapseModelArchitectureByDefault={collapseModelArchitectureResolved}
                         />
                     </div>
                 </div>

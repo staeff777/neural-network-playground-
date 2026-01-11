@@ -1,6 +1,5 @@
 import { LayeredNetworkVisualizer } from "./LayeredNetworkVisualizer";
 import { useState } from "react";
-import { getPlaygroundOptions } from "../lib/options.js";
 
 export function NetworkVisualizer({
   input, // can be number or array
@@ -19,7 +18,7 @@ export function NetworkVisualizer({
   const resolvedCollapseByDefault =
     typeof collapseModelArchitectureByDefault === "boolean"
       ? collapseModelArchitectureByDefault
-      : getPlaygroundOptions().collapseModelArchitectureByDefault;
+      : false;
   const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
 
   if (model && model.getTopology) {
@@ -45,7 +44,7 @@ export function NetworkVisualizer({
         output={output}
         outputLabel={outputLabel}
         formula={formula}
-        collapseModelArchitectureByDefault={collapseModelArchitectureByDefault}
+        collapseModelArchitectureByDefault={resolvedCollapseByDefault}
       />
     );
   }
