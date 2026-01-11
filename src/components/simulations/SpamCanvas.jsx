@@ -449,12 +449,19 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       ctx.fillStyle = 'rgba(0,0,0,0.8)';
       ctx.strokeStyle = '#fff';
 
-      const labelText = hoverInfo.target === 1 ? 'SPAM' : 'HAM';
+      const hasPrediction = typeof hoverInfo.prediction === 'number' && Number.isFinite(hoverInfo.prediction);
+      const isPredictionPoint = hoverInfo.type === 'Prediction' && hasPrediction;
+      const predictedClass = hasPrediction ? (hoverInfo.prediction > 0.5 ? 1 : 0) : null;
+      const headerClass = isPredictionPoint ? predictedClass : hoverInfo.target;
+      const labelText = headerClass === 1 ? 'SPAM' : 'HAM';
+      const headerColor = headerClass === 1 ? '#e74c3c' : '#2ecc71';
       const wordsText = `Words: ${hoverInfo.input}`;
       const typeText = hoverInfo.type ? `(${hoverInfo.type})` : '';
 
       const tw = 120;
-      const th = hoverInfo.type ? 55 : 40;
+      const lineHeight = 12;
+      const extraLines = (hasPrediction ? 1 : 0) + (isPredictionPoint ? 1 : 0);
+      const th = (hoverInfo.type ? 55 : 40) + (extraLines * lineHeight);
       let tx = hoverInfo.x + 10;
       let ty = hoverInfo.y - 10;
 
@@ -473,14 +480,20 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       ctx.textAlign = 'left';
 
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillStyle = hoverInfo.target === 1 ? '#e74c3c' : '#2ecc71';
+      ctx.fillStyle = headerColor;
       ctx.fillText(`${labelText} ${typeText}`, tx + 8, ty + 6);
 
       ctx.fillStyle = '#ddd';
       ctx.font = '10px sans-serif';
       ctx.fillText(wordsText, tx + 8, ty + 20);
-      if (hoverInfo.prediction !== undefined) {
-        ctx.fillText(`Pred: ${hoverInfo.prediction.toFixed(2)}`, tx + 8, ty + 32);
+      let nextLineY = ty + 32;
+      if (hasPrediction) {
+        ctx.fillText(`Pred: ${hoverInfo.prediction.toFixed(2)}`, tx + 8, nextLineY);
+        nextLineY += lineHeight;
+      }
+      if (isPredictionPoint) {
+        const gtLabel = hoverInfo.target === 1 ? 'SPAM' : 'HAM';
+        ctx.fillText(`GT: ${gtLabel}`, tx + 8, nextLineY);
       }
 
       ctx.restore();
