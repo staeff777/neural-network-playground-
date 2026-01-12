@@ -7,6 +7,14 @@ import { SpamHiddenPhase } from './components/phases/Phase5_SpamHidden';
 import { ArchitectureGallery } from './components/debug/ArchitectureGallery';
 import './app.css';
 
+const PHASES = [
+  { id: 'linear_regression', label: 'Phase 1 (Linear)', title: 'Phase 1: Linear Regression' },
+  { id: 'logistic_regression', label: 'Phase 2 (Logistic)', title: 'Phase 2: Logistic Regression' },
+  { id: 'multiple_inputs', label: 'Phase 3 (Multi)', title: 'Phase 3: Multiple Inputs' },
+  { id: 'single_layer_nonlinear', label: 'Phase 4 (Nonlinear 1)', title: 'Phase 4: Single Layer Nonlinear Data' },
+  { id: 'double_layer_nonlinear', label: 'Phase 5 (Nonlinear 2)', title: 'Phase 5: Double Layer Nonlinear Data' },
+];
+
 export function App() {
   const [simId, setSimId] = useState(null);
 
@@ -24,9 +32,9 @@ export function App() {
         <header>
           <h1>Neural Network Demonstrator</h1>
           <p>Architecture Gallery (Debug)</p>
-          <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+          <nav className="sim-selector" aria-label="Phase Navigation" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
             <a href="?sim=linear_regression" style={{ marginRight: '10px' }}>Back to App</a>
-          </div>
+          </nav>
         </header>
         <main>
           <ArchitectureGallery />
@@ -35,34 +43,29 @@ export function App() {
     );
   }
 
-  // Common Header for Phases
-  // Note: simConfig title was used in original header. Use a map or dynamic title?
-  // Since we don't have simConfig here (it's in the Phase), we can just use the generic header or pass title.
-  // Actually, original App had global navigation. Let's keep it.
-
-  const getValidationTitle = (id) => {
-    switch (id) {
-      case 'linear_regression': return 'Phase 1: Linear Regression';
-      case 'logistic_regression': return 'Phase 2: Logistic Regression';
-      case 'multiple_inputs': return 'Phase 3: Multiple Inputs';
-      case 'single_layer_nonlinear': return 'Phase 4: Single Layer Nonlinear Data';
-      case 'double_layer_nonlinear': return 'Phase 5: Double Layer Nonlinear Data';
-      default: return 'Neural Network Demonstrator';
-    }
-  }
+  const currentPhase = PHASES.find(p => p.id === simId);
+  const title = currentPhase ? currentPhase.title : 'Neural Network Demonstrator';
 
   return (
     <div className="container">
       <header>
         <h1>Neural Network Demonstrator</h1>
-        <p>{getValidationTitle(simId)}</p>
-        <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-          <a href="?sim=linear_regression" style={{ marginRight: '10px', fontWeight: simId === 'linear_regression' ? 'bold' : 'normal' }}>Phase 1 (Linear)</a>
-          <a href="?sim=logistic_regression" style={{ marginRight: '10px', fontWeight: simId === 'logistic_regression' ? 'bold' : 'normal' }}>Phase 2 (Logistic)</a>
-          <a href="?sim=multiple_inputs" style={{ marginRight: '10px', fontWeight: simId === 'multiple_inputs' ? 'bold' : 'normal' }}>Phase 3 (Multi)</a>
-          <a href="?sim=single_layer_nonlinear" style={{ marginRight: '10px', fontWeight: simId === 'single_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear 1)</a>
-          <a href="?sim=double_layer_nonlinear" style={{ fontWeight: simId === 'double_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 5 (Nonlinear 2)</a>
-        </div>
+        <p>{title}</p>
+        <nav className="sim-selector" aria-label="Phase Navigation" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+          {PHASES.map((phase, index) => (
+            <a
+              key={phase.id}
+              href={`?sim=${phase.id}`}
+              aria-current={simId === phase.id ? 'page' : undefined}
+              style={{
+                marginRight: index === PHASES.length - 1 ? 0 : '10px',
+                fontWeight: simId === phase.id ? 'bold' : 'normal',
+              }}
+            >
+              {phase.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <main style={{ height: '100%' }}>
