@@ -41,6 +41,7 @@ export function ControlPanel({
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Select trainer type"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -54,6 +55,13 @@ export function ControlPanel({
           onClick={onTrain}
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
+          title={
+            dataCount === 0
+              ? "Generate data first"
+              : isTraining
+              ? "Training in progress"
+              : "Start training model"
+          }
         >
           {isTraining ? "Searching..." : "2. Train"}
         </button>
