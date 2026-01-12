@@ -1,7 +1,16 @@
-import { useRef, useEffect, useState } from 'preact/hooks';
-import { getNiceTicks } from '../../utils/graphUtils';
+import { useRef, useEffect, useState } from "preact/hooks";
+import { getNiceTicks } from "../../utils/graphUtils";
 
-export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = false, showModel = true, showGroundTruth = true, showProbabilities = false }) {
+export function SpamCanvas({
+  time,
+  groundTruth,
+  neuralNet,
+  data,
+  staticMode = false,
+  showModel = true,
+  showGroundTruth = true,
+  showProbabilities = false,
+}) {
   const canvasRef = useRef(null);
   const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -60,7 +69,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       const dx = (e.clientX - lastMouse.current.x) * scaleX;
       const dy = (e.clientY - lastMouse.current.y) * scaleY;
       lastMouse.current = { x: e.clientX, y: e.clientY };
-      setTransform(prev => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+      setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
       setHoverInfo(null);
     } else {
       const mx = (e.clientX - rect.left) * scaleX;
@@ -101,7 +110,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const width = canvas.width;
     const height = canvas.height;
 
@@ -115,16 +124,26 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
     const graphHeight = height - 2 * padding;
 
     // Fixed Domains
-    const xMinGlobal = 0, xMaxGlobal = 20;
-    const yMinGlobal = 0, yMaxGlobal = 1;
+    const xMinGlobal = 0,
+      xMaxGlobal = 20;
+    const yMinGlobal = 0,
+      yMaxGlobal = 1;
 
     // Mapping Functions with Transform
-    const mapX = (x) => padding + (x / xMaxGlobal) * graphWidth * transform.k + transform.x;
-    const mapY = (y) => (height - padding) - (y / yMaxGlobal) * graphHeight * transform.k + transform.y;
+    const mapX = (x) =>
+      padding + (x / xMaxGlobal) * graphWidth * transform.k + transform.x;
+    const mapY = (y) =>
+      height -
+      padding -
+      (y / yMaxGlobal) * graphHeight * transform.k +
+      transform.y;
 
     // --- Draw Axes & Grid ---
-    const getInvX = (sx) => ((sx - padding - transform.x) / (graphWidth * transform.k)) * xMaxGlobal;
-    const getInvY = (sy) => -((sy - (height - padding) - transform.y) / (graphHeight * transform.k)) * yMaxGlobal; // Negate because Y goes up
+    const getInvX = (sx) =>
+      ((sx - padding - transform.x) / (graphWidth * transform.k)) * xMaxGlobal;
+    const getInvY = (sy) =>
+      -((sy - (height - padding) - transform.y) / (graphHeight * transform.k)) *
+      yMaxGlobal; // Negate because Y goes up
 
     const visXMin = getInvX(padding);
     const visXMax = getInvX(width - padding);
@@ -136,16 +155,16 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
     const yTicks = getNiceTicks(visYMin, visYMax, 5);
 
     ctx.beginPath();
-    ctx.strokeStyle = '#eee';
+    ctx.strokeStyle = "#eee";
     ctx.lineWidth = 1;
 
     // Grid & Ticks X
-    ctx.fillStyle = '#333';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.font = '10px sans-serif';
+    ctx.fillStyle = "#333";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.font = "10px sans-serif";
 
-    xTicks.forEach(val => {
+    xTicks.forEach((val) => {
       const x = mapX(val);
       if (x < padding || x > width - padding) return; // Clip locally
       // Grid line
@@ -156,9 +175,9 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
     });
 
     // Grid & Ticks Y
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    yTicks.forEach(val => {
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    yTicks.forEach((val) => {
       const y = mapY(val);
       if (y < padding || y > height - padding) return;
       // Grid line
@@ -171,22 +190,22 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
 
     // Axis Lines (The Box)
     ctx.beginPath();
-    ctx.strokeStyle = '#333';
+    ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     ctx.rect(padding, padding, graphWidth, graphHeight);
     ctx.stroke();
 
     // Labels
-    ctx.fillStyle = '#333';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = "#333";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
     ctx.fillText("Number of 'Spam' Words", width / 2, height - 10);
 
     ctx.save();
     ctx.translate(15, height / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = 'center';
-    ctx.fillText('Spam Probability', 0, 0);
+    ctx.textAlign = "center";
+    ctx.fillText("Spam Probability", 0, 0);
     ctx.restore();
 
     // --- Content Clipping ---
@@ -216,9 +235,9 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         const safeX = Math.min(Math.max(x, xMinGlobal), xMaxGlobal);
 
         let y = 0;
-        if (typeof model.getProbability === 'function') {
+        if (typeof model.getProbability === "function") {
           y = model.getProbability(safeX);
-        } else if (typeof model.predict === 'function') {
+        } else if (typeof model.predict === "function") {
           y = model.predict(safeX);
         }
 
@@ -228,8 +247,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         if (!started) {
           ctx.moveTo(px, py);
           started = true;
-        }
-        else ctx.lineTo(px, py);
+        } else ctx.lineTo(px, py);
       }
       ctx.stroke();
       ctx.setLineDash([]);
@@ -240,13 +258,13 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
     // }
 
     if (showModel && neuralNet) {
-      drawCurve(neuralNet, '#e74c3c');
+      drawCurve(neuralNet, "#e74c3c");
     }
 
     // 2. Draw Points
     // Static Mode
     if (staticMode && data) {
-      data.forEach(d => {
+      data.forEach((d) => {
         // Simple culling
         if (d.input < visXMin - 5 || d.input > visXMax + 5) return;
 
@@ -259,21 +277,32 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
 
         // Record for hover (Ground Truth)
         drawnPoints.current.push({
-          x: cx, y: cy,
-          info: { x: cx, y: cy, input: d.input, target: d.target, type: 'Ground Truth' }
+          x: cx,
+          y: cy,
+          info: {
+            x: cx,
+            y: cy,
+            input: d.input,
+            target: d.target,
+            type: "Ground Truth",
+          },
         });
 
         let predColor = null;
         if (neuralNet && showModel) {
           try {
             const prediction = neuralNet.predict(d.input);
-            predColor = prediction > 0.5 ? '#e74c3c' : '#2ecc71';
-          } catch (e) { }
+            predColor = prediction > 0.5 ? "#e74c3c" : "#2ecc71";
+          } catch (e) {}
         }
 
         // Prediction Point (if enabled)
         // Prediction Point (if enabled)
-        if (showProbabilities && neuralNet && typeof neuralNet.predict === 'function') {
+        if (
+          showProbabilities &&
+          neuralNet &&
+          typeof neuralNet.predict === "function"
+        ) {
           try {
             const prob = neuralNet.predict(d.input);
             const cyPred = mapY(prob);
@@ -284,7 +313,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
               ctx.moveTo(cx, cy);
               ctx.lineTo(cx, cyPred);
               ctx.setLineDash([2, 4]);
-              ctx.strokeStyle = 'rgba(0,0,0,0.15)'; // Very light
+              ctx.strokeStyle = "rgba(0,0,0,0.15)"; // Very light
               ctx.lineWidth = 1;
               ctx.stroke();
               ctx.setLineDash([]); // Reset
@@ -293,7 +322,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
             let predHaloColor = null;
             if (neuralNet && showModel) {
               const prediction = neuralNet.predict(d.input);
-              predHaloColor = prediction > 0.5 ? '#e74c3c' : '#2ecc71';
+              predHaloColor = prediction > 0.5 ? "#e74c3c" : "#2ecc71";
             }
 
             if (predHaloColor) {
@@ -306,11 +335,18 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
 
             // Record for hover (Prediction)
             drawnPoints.current.push({
-              x: cx, y: cyPred,
-              info: { x: cx, y: cyPred, input: d.input, target: d.target, prediction: prob, type: 'Prediction' }
+              x: cx,
+              y: cyPred,
+              info: {
+                x: cx,
+                y: cyPred,
+                input: d.input,
+                target: d.target,
+                prediction: prob,
+                type: "Prediction",
+              },
             });
-
-          } catch (e) { }
+          } catch (e) {}
         }
         // If Probabilities OFF, show Halo on Ground Truth
         else if (predColor) {
@@ -324,9 +360,9 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         // Ground Truth Point (Anchor) - Always drawn
         ctx.beginPath();
         ctx.arc(cx + jitterX, cy + jitterY, 5, 0, Math.PI * 2);
-        ctx.fillStyle = d.target === 1 ? '#e74c3c' : '#2ecc71';
+        ctx.fillStyle = d.target === 1 ? "#e74c3c" : "#2ecc71";
         ctx.fill();
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.stroke();
       });
@@ -357,12 +393,16 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         if (neuralNet && showModel) {
           try {
             const prediction = neuralNet.predict(wordCount);
-            predColor = prediction > 0.5 ? '#e74c3c' : '#2ecc71';
-          } catch (e) { }
+            predColor = prediction > 0.5 ? "#e74c3c" : "#2ecc71";
+          } catch (e) {}
         }
 
         // Prediction Point (if enabled)
-        if (showProbabilities && neuralNet && typeof neuralNet.predict === 'function') {
+        if (
+          showProbabilities &&
+          neuralNet &&
+          typeof neuralNet.predict === "function"
+        ) {
           try {
             const prob = neuralNet.predict(wordCount);
             const cyPred = mapY(prob);
@@ -373,7 +413,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
               ctx.moveTo(cx, cy);
               ctx.lineTo(cx, cyPred);
               ctx.setLineDash([2, 4]);
-              ctx.strokeStyle = 'rgba(0,0,0,0.35)'; // Very light
+              ctx.strokeStyle = "rgba(0,0,0,0.35)"; // Very light
               ctx.lineWidth = 1;
               ctx.stroke();
               ctx.setLineDash([]); // Reset
@@ -382,9 +422,8 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
             let predHaloColor = null;
             if (neuralNet && showModel) {
               const prediction = neuralNet.predict(wordCount);
-              predHaloColor = prediction > 0.5 ? '#e74c3c' : '#2ecc71';
+              predHaloColor = prediction > 0.5 ? "#e74c3c" : "#2ecc71";
             }
-
 
             if (predHaloColor) {
               ctx.beginPath();
@@ -393,8 +432,7 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
               ctx.lineWidth = 2;
               ctx.stroke();
             }
-
-          } catch (e) { }
+          } catch (e) {}
         }
         // If Probabilities OFF, show Halo on Ground Truth
         else if (predColor) {
@@ -407,9 +445,9 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
 
         ctx.beginPath();
         ctx.arc(finalX, finalY, 5, 0, Math.PI * 2);
-        ctx.fillStyle = isSpam ? '#e74c3c' : '#2ecc71';
+        ctx.fillStyle = isSpam ? "#e74c3c" : "#2ecc71";
         ctx.fill();
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.stroke();
       }
@@ -428,14 +466,19 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         const cy = mapY(isSpam) + jitterY;
 
         // Check visibility
-        if (cx > padding && cx < width - padding && cy > padding && cy < height - padding) {
+        if (
+          cx > padding &&
+          cx < width - padding &&
+          cy > padding &&
+          cy < height - padding
+        ) {
           ctx.beginPath();
           ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-          ctx.strokeStyle = '#333';
+          ctx.strokeStyle = "#333";
           ctx.stroke();
 
-          ctx.fillStyle = '#333';
-          ctx.font = '10px sans-serif';
+          ctx.fillStyle = "#333";
+          ctx.font = "10px sans-serif";
           ctx.fillText(`${wordCount}`, cx, cy - 12);
         }
       }
@@ -446,22 +489,29 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
     // Draw Tooltip (Outside Clip)
     if (hoverInfo) {
       ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.8)';
-      ctx.strokeStyle = '#fff';
+      ctx.fillStyle = "rgba(0,0,0,0.8)";
+      ctx.strokeStyle = "#fff";
 
-      const hasPrediction = typeof hoverInfo.prediction === 'number' && Number.isFinite(hoverInfo.prediction);
-      const isPredictionPoint = hoverInfo.type === 'Prediction' && hasPrediction;
-      const predictedClass = hasPrediction ? (hoverInfo.prediction > 0.5 ? 1 : 0) : null;
+      const hasPrediction =
+        typeof hoverInfo.prediction === "number" &&
+        Number.isFinite(hoverInfo.prediction);
+      const isPredictionPoint =
+        hoverInfo.type === "Prediction" && hasPrediction;
+      const predictedClass = hasPrediction
+        ? hoverInfo.prediction > 0.5
+          ? 1
+          : 0
+        : null;
       const headerClass = isPredictionPoint ? predictedClass : hoverInfo.target;
-      const labelText = headerClass === 1 ? 'SPAM' : 'HAM';
-      const headerColor = headerClass === 1 ? '#e74c3c' : '#2ecc71';
+      const labelText = headerClass === 1 ? "SPAM" : "HAM";
+      const headerColor = headerClass === 1 ? "#e74c3c" : "#2ecc71";
       const wordsText = `Words: ${hoverInfo.input}`;
-      const typeText = hoverInfo.type ? `(${hoverInfo.type})` : '';
+      const typeText = hoverInfo.type ? `(${hoverInfo.type})` : "";
 
-      const tw = 120;
-      const lineHeight = 12;
+      const tw = 145;
+      const lineHeight = 15;
       const extraLines = (hasPrediction ? 1 : 0) + (isPredictionPoint ? 1 : 0);
-      const th = (hoverInfo.type ? 55 : 40) + (extraLines * lineHeight);
+      const th = (hoverInfo.type ? 35 : 25) + extraLines * lineHeight;
       let tx = hoverInfo.x + 10;
       let ty = hoverInfo.y - 10;
 
@@ -476,30 +526,44 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.textBaseline = 'top';
-      ctx.textAlign = 'left';
+      ctx.textBaseline = "top";
+      ctx.textAlign = "left";
 
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = "bold 11px sans-serif";
       ctx.fillStyle = headerColor;
       ctx.fillText(`${labelText} ${typeText}`, tx + 8, ty + 6);
 
-      ctx.fillStyle = '#ddd';
-      ctx.font = '10px sans-serif';
+      ctx.fillStyle = "#ddd";
+      ctx.font = "10px sans-serif";
       ctx.fillText(wordsText, tx + 8, ty + 20);
       let nextLineY = ty + 32;
       if (hasPrediction) {
-        ctx.fillText(`Pred: ${hoverInfo.prediction.toFixed(2)}`, tx + 8, nextLineY);
+        ctx.fillText(
+          `Pred: ${hoverInfo.prediction.toFixed(2)}`,
+          tx + 8,
+          nextLineY,
+        );
         nextLineY += lineHeight;
       }
       if (isPredictionPoint) {
-        const gtLabel = hoverInfo.target === 1 ? 'SPAM' : 'HAM';
+        const gtLabel = hoverInfo.target === 1 ? "SPAM" : "HAM";
         ctx.fillText(`GT: ${gtLabel}`, tx + 8, nextLineY);
       }
 
       ctx.restore();
     }
-
-  }, [time, groundTruth, neuralNet, data, staticMode, showModel, showGroundTruth, showProbabilities, transform, hoverInfo]);
+  }, [
+    time,
+    groundTruth,
+    neuralNet,
+    data,
+    staticMode,
+    showModel,
+    showGroundTruth,
+    showProbabilities,
+    transform,
+    hoverInfo,
+  ]);
 
   return (
     <div className="canvas-container">
@@ -507,7 +571,12 @@ export function SpamCanvas({ time, groundTruth, neuralNet, data, staticMode = fa
         ref={canvasRef}
         width={600}
         height={300}
-        style={{ width: '100%', border: '1px solid #ccc', background: '#fff', cursor: hoverInfo ? 'pointer' : (isDragging ? 'grabbing' : 'grab') }}
+        style={{
+          width: "100%",
+          border: "1px solid #ccc",
+          background: "#fff",
+          cursor: hoverInfo ? "pointer" : isDragging ? "grabbing" : "grab",
+        }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}

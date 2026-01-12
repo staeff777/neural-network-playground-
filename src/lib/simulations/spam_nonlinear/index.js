@@ -3,7 +3,7 @@ import { LogisticModelVector } from "../spam_advanced/model";
 import { SpamAdvancedCanvas } from "../../../components/simulations/SpamAdvancedCanvas";
 
 export const FEATURES = [
-  { label: "Spam Words", idx: 0, max: 400 },
+  { label: "Total Words", idx: 0, max: 400 },
   { label: "Links", idx: 1, max: 10 },
 ];
 
@@ -332,7 +332,7 @@ export const config = {
 
   networkViz: {
     formula: "p = σ(w₁x₁ + w₂x₂ + b)",
-    inputLabels: ["Spam Words", "Links"],
+    inputLabels: ["Total Words", "Links"],
     outputLabel: "Spam (p)",
     biasLabel: "b",
   },
