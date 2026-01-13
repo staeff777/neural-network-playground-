@@ -7,6 +7,14 @@ import { SpamHiddenPhase } from './components/phases/Phase5_SpamHidden';
 import { ArchitectureGallery } from './components/debug/ArchitectureGallery';
 import './app.css';
 
+const PHASES = [
+  { id: 'linear_regression', label: 'Phase 1 (Linear)' },
+  { id: 'logistic_regression', label: 'Phase 2 (Logistic)' },
+  { id: 'multiple_inputs', label: 'Phase 3 (Multi)' },
+  { id: 'single_layer_nonlinear', label: 'Phase 4 (Nonlinear 1)' },
+  { id: 'double_layer_nonlinear', label: 'Phase 5 (Nonlinear 2)' },
+];
+
 export function App() {
   const [simId, setSimId] = useState(null);
 
@@ -56,13 +64,27 @@ export function App() {
       <header>
         <h1>Neural Network Demonstrator</h1>
         <p>{getValidationTitle(simId)}</p>
-        <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-          <a href="?sim=linear_regression" style={{ marginRight: '10px', fontWeight: simId === 'linear_regression' ? 'bold' : 'normal' }}>Phase 1 (Linear)</a>
-          <a href="?sim=logistic_regression" style={{ marginRight: '10px', fontWeight: simId === 'logistic_regression' ? 'bold' : 'normal' }}>Phase 2 (Logistic)</a>
-          <a href="?sim=multiple_inputs" style={{ marginRight: '10px', fontWeight: simId === 'multiple_inputs' ? 'bold' : 'normal' }}>Phase 3 (Multi)</a>
-          <a href="?sim=single_layer_nonlinear" style={{ marginRight: '10px', fontWeight: simId === 'single_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear 1)</a>
-          <a href="?sim=double_layer_nonlinear" style={{ fontWeight: simId === 'double_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 5 (Nonlinear 2)</a>
-        </div>
+        <nav
+          className="sim-selector"
+          aria-label="Phase Navigation"
+          style={{ fontSize: '0.8rem', marginTop: '5px' }}
+        >
+          {PHASES.map((phase, index) => (
+            <a
+              key={phase.id}
+              href={`?sim=${phase.id}`}
+              aria-current={simId === phase.id ? 'page' : undefined}
+              style={{
+                marginRight: index === PHASES.length - 1 ? 0 : '10px',
+                fontWeight: simId === phase.id ? 'bold' : 'normal',
+                textDecoration: simId === phase.id ? 'none' : 'underline',
+                color: simId === phase.id ? 'inherit' : undefined
+              }}
+            >
+              {phase.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <main style={{ height: '100%' }}>
