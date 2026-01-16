@@ -1,0 +1,3 @@
+## 2024-03-24 - Navigation Improvements
+**Learning:** Changing from full page reloads to client-side routing (using `history.pushState` and state management) significantly improves the perceived performance and user experience. Combined with proper semantic HTML (`<nav>`) and ARIA attributes (`aria-current="page"`), this creates a much more accessible and modern application feel without requiring complex routing libraries.
+**Action:** When working on navigation components in legacy-style React/Preact apps, always check if they are using simple `<a>` tags causing reloads. Replacing them with state-based navigation is a high-impact, low-cost micro-UX improvement. Always pair this with `aria-current` for accessibility.
