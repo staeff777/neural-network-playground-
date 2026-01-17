@@ -1,3 +1,5 @@
+import { Spinner } from "./common/Spinner";
+
 export function ControlPanel({
   onTrain,
   onRun,
@@ -38,6 +40,7 @@ export function ControlPanel({
         }}
       >
         <select
+          aria-label="Training Method"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -54,8 +57,16 @@ export function ControlPanel({
           onClick={onTrain}
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
+          title={dataCount === 0 ? "Generate data first" : "Start training"}
+          style={{ display: "flex", alignItems: "center", gap: "8px" }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
+          {isTraining ? (
+            <>
+              <Spinner /> Searching...
+            </>
+          ) : (
+            "2. Train"
+          )}
         </button>
       </div>
 
@@ -64,6 +75,7 @@ export function ControlPanel({
           onClick={onRun}
           disabled={isTraining}
           style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+          aria-pressed={isRunning}
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
         </button>
