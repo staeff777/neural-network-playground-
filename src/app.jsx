@@ -11,10 +11,22 @@ export function App() {
   const [simId, setSimId] = useState(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('sim') || 'linear_regression';
-    setSimId(id);
+    const syncId = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSimId(params.get('sim') || 'linear_regression');
+    };
+    syncId();
+    window.addEventListener('popstate', syncId);
+    return () => window.removeEventListener('popstate', syncId);
   }, []);
+
+  const handleNav = (e, id) => {
+    e.preventDefault();
+    const url = new URL(window.location);
+    url.searchParams.set('sim', id);
+    window.history.pushState({}, '', url);
+    setSimId(id);
+  };
 
   if (!simId) return <div>Loading App...</div>;
 
@@ -24,9 +36,9 @@ export function App() {
         <header>
           <h1>Neural Network Demonstrator</h1>
           <p>Architecture Gallery (Debug)</p>
-          <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-            <a href="?sim=linear_regression" style={{ marginRight: '10px' }}>Back to App</a>
-          </div>
+          <nav className="sim-selector" aria-label="Debug Navigation" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+            <a href="?sim=linear_regression" onClick={(e) => handleNav(e, 'linear_regression')} style={{ marginRight: '10px' }}>Back to App</a>
+          </nav>
         </header>
         <main>
           <ArchitectureGallery />
@@ -56,13 +68,13 @@ export function App() {
       <header>
         <h1>Neural Network Demonstrator</h1>
         <p>{getValidationTitle(simId)}</p>
-        <div className="sim-selector" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-          <a href="?sim=linear_regression" style={{ marginRight: '10px', fontWeight: simId === 'linear_regression' ? 'bold' : 'normal' }}>Phase 1 (Linear)</a>
-          <a href="?sim=logistic_regression" style={{ marginRight: '10px', fontWeight: simId === 'logistic_regression' ? 'bold' : 'normal' }}>Phase 2 (Logistic)</a>
-          <a href="?sim=multiple_inputs" style={{ marginRight: '10px', fontWeight: simId === 'multiple_inputs' ? 'bold' : 'normal' }}>Phase 3 (Multi)</a>
-          <a href="?sim=single_layer_nonlinear" style={{ marginRight: '10px', fontWeight: simId === 'single_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear 1)</a>
-          <a href="?sim=double_layer_nonlinear" style={{ fontWeight: simId === 'double_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 5 (Nonlinear 2)</a>
-        </div>
+        <nav className="sim-selector" aria-label="Phase Navigation" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+          <a href="?sim=linear_regression" onClick={(e) => handleNav(e, 'linear_regression')} aria-current={simId === 'linear_regression' ? 'page' : undefined} style={{ marginRight: '10px', fontWeight: simId === 'linear_regression' ? 'bold' : 'normal' }}>Phase 1 (Linear)</a>
+          <a href="?sim=logistic_regression" onClick={(e) => handleNav(e, 'logistic_regression')} aria-current={simId === 'logistic_regression' ? 'page' : undefined} style={{ marginRight: '10px', fontWeight: simId === 'logistic_regression' ? 'bold' : 'normal' }}>Phase 2 (Logistic)</a>
+          <a href="?sim=multiple_inputs" onClick={(e) => handleNav(e, 'multiple_inputs')} aria-current={simId === 'multiple_inputs' ? 'page' : undefined} style={{ marginRight: '10px', fontWeight: simId === 'multiple_inputs' ? 'bold' : 'normal' }}>Phase 3 (Multi)</a>
+          <a href="?sim=single_layer_nonlinear" onClick={(e) => handleNav(e, 'single_layer_nonlinear')} aria-current={simId === 'single_layer_nonlinear' ? 'page' : undefined} style={{ marginRight: '10px', fontWeight: simId === 'single_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 4 (Nonlinear 1)</a>
+          <a href="?sim=double_layer_nonlinear" onClick={(e) => handleNav(e, 'double_layer_nonlinear')} aria-current={simId === 'double_layer_nonlinear' ? 'page' : undefined} style={{ fontWeight: simId === 'double_layer_nonlinear' ? 'bold' : 'normal' }}>Phase 5 (Nonlinear 2)</a>
+        </nav>
       </header>
 
       <main style={{ height: '100%' }}>
