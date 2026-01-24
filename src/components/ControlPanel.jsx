@@ -41,6 +41,8 @@ export function ControlPanel({
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Training Method"
+          title="Select the algorithm used to find the best model parameters"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -54,6 +56,13 @@ export function ControlPanel({
           onClick={onTrain}
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
+          title={
+            isTraining
+              ? "Training in progress..."
+              : dataCount === 0
+                ? "No data available for training"
+                : "Start training to find optimal parameters"
+          }
         >
           {isTraining ? "Searching..." : "2. Train"}
         </button>
@@ -64,6 +73,11 @@ export function ControlPanel({
           onClick={onRun}
           disabled={isTraining}
           style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+          title={
+            isRunning
+              ? "Stop the simulation loop"
+              : "Start the simulation loop with current parameters"
+          }
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
         </button>
