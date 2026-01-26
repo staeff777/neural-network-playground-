@@ -38,6 +38,7 @@ export function ControlPanel({
         }}
       >
         <select
+          aria-label="Select training method"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -50,20 +51,22 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
-        >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+        <span title={dataCount === 0 ? "Generate data first" : undefined}>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+          >
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
         <button
           onClick={onRun}
           disabled={isTraining}
-          style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+          style={isRunning ? { background: "#d35400", color: "white" } : {}}
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
         </button>
