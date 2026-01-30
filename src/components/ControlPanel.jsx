@@ -38,6 +38,7 @@ export function ControlPanel({
         }}
       >
         <select
+          aria-label="Trainer Type"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -63,7 +64,7 @@ export function ControlPanel({
         <button
           onClick={onRun}
           disabled={isTraining}
-          style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+          style={isRunning ? { background: "#f39c12", color: "#000000" } : {}}
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
         </button>

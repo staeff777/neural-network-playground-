@@ -20,6 +20,7 @@ export function NetworkVisualizer({
       ? collapseModelArchitectureByDefault
       : false;
   const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
+  const [isFocused, setIsFocused] = useState(false);
 
   if (model && model.getTopology) {
     // Normalize inputs
@@ -144,10 +145,22 @@ export function NetworkVisualizer({
           height={boxHeight}
           rx="15"
           fill="transparent"
-          stroke="#333"
-          strokeWidth="2"
+          stroke={isFocused ? "#4a90e2" : "#333"}
+          strokeWidth={isFocused ? "3" : "2"}
           style={{ cursor: "pointer" }}
           onClick={() => setShowDetails((v) => !v)}
+          role="button"
+          tabIndex="0"
+          aria-label={showDetails ? "Hide model details" : "Show model details"}
+          aria-expanded={showDetails}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setShowDetails((v) => !v);
+            }
+          }}
         />
 
         {/* Converge point for weights */}
