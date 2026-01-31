@@ -38,6 +38,7 @@ export function ControlPanel({
         }}
       >
         <select
+          aria-label="Trainer Type"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -50,23 +51,60 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
+        <span
+          title={
+            isTraining
+              ? "Training is currently in progress"
+              : dataCount === 0
+              ? "No training data available. Simulation data is generated automatically."
+              : "Start training to find optimal parameters"
+          }
+          style={{
+            cursor: isTraining || dataCount === 0 ? "not-allowed" : "default",
+          }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+            style={{
+              pointerEvents: isTraining || dataCount === 0 ? "none" : "auto",
+            }}
+          >
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
-        <button
-          onClick={onRun}
-          disabled={isTraining}
-          style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+        <span
+          title={
+            isTraining
+              ? "Cannot run simulation while training is in progress"
+              : isRunning
+              ? "Stop the simulation"
+              : "Start the simulation"
+          }
+          style={{
+            cursor: isTraining ? "not-allowed" : "default",
+          }}
         >
-          3. Simulation {isRunning ? "Stop" : "Start"}
-        </button>
+          <button
+            onClick={onRun}
+            disabled={isTraining}
+            style={
+              isRunning
+                ? {
+                    background: "#f39c12",
+                    color: "white",
+                    pointerEvents: isTraining ? "none" : "auto",
+                  }
+                : { pointerEvents: isTraining ? "none" : "auto" }
+            }
+          >
+            3. Simulation {isRunning ? "Stop" : "Start"}
+          </button>
+        </span>
       )}
     </div>
   );
