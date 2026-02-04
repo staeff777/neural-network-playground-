@@ -38,6 +38,7 @@ export function ControlPanel({
         }}
       >
         <select
+          aria-label="Trainer Type"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -50,23 +51,45 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
+        <span
+          title={
+            isTraining
+              ? "Training in progress"
+              : dataCount === 0
+                ? "Generate data first"
+                : ""
+          }
+          style={{ display: "inline-block" }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+            style={
+              isTraining || dataCount === 0 ? { pointerEvents: "none" } : {}
+            }
+          >
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
-        <button
-          onClick={onRun}
-          disabled={isTraining}
-          style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+        <span
+          title={isTraining ? "Cannot run simulation while training" : ""}
+          style={{ display: "inline-block" }}
         >
-          3. Simulation {isRunning ? "Stop" : "Start"}
-        </button>
+          <button
+            onClick={onRun}
+            disabled={isTraining}
+            style={{
+              ...(isRunning ? { background: "#f39c12", color: "white" } : {}),
+              ...(isTraining ? { pointerEvents: "none" } : {}),
+            }}
+          >
+            3. Simulation {isRunning ? "Stop" : "Start"}
+          </button>
+        </span>
       )}
     </div>
   );
