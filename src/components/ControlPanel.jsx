@@ -37,7 +37,11 @@ export function ControlPanel({
           alignItems: "center",
         }}
       >
+        <label htmlFor="trainer-type" style={{ fontSize: "0.9rem" }}>
+          Trainer:
+        </label>
         <select
+          id="trainer-type"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
