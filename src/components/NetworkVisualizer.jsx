@@ -119,8 +119,23 @@ export function NetworkVisualizer({
         justifyContent: "center",
       }}
     >
-      <div className="model-title" style={{ marginBottom: "10px" }}>
+      <div className="model-title" style={{ marginBottom: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
         Model Architecture
+        <button
+          onClick={() => setShowDetails((v) => !v)}
+          aria-expanded={showDetails}
+          style={{
+            padding: "2px 8px",
+            fontSize: "0.8rem",
+            background: "transparent",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            cursor: "pointer",
+            color: "#555"
+          }}
+        >
+          {showDetails ? "Hide Details" : "Show Details"}
+        </button>
       </div>
       <svg width={svgWidth} height={svgHeight} style={{ overflow: "visible" }}>
         <defs>
