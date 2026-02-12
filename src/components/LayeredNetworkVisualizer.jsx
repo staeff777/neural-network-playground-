@@ -148,6 +148,18 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                     strokeWidth="2"
                     style={{ cursor: 'pointer' }}
                     onClick={() => setShowDetails((v) => !v)}
+                    role="button"
+                    tabindex="0"
+                    aria-label={
+                        showDetails ? "Collapse model details" : "Expand model details"
+                    }
+                    aria-expanded={showDetails}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setShowDetails((v) => !v);
+                        }
+                    }}
                 />
 
                 {/* CONNECTIONS */}
