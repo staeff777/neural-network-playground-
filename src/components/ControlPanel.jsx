@@ -41,6 +41,7 @@ export function ControlPanel({
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Select Trainer Type"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -54,7 +55,9 @@ export function ControlPanel({
           onClick={onTrain}
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
+          style={{ display: "flex", alignItems: "center" }}
         >
+          {isTraining && <Spinner />}
           {isTraining ? "Searching..." : "2. Train"}
         </button>
       </div>
@@ -63,7 +66,7 @@ export function ControlPanel({
         <button
           onClick={onRun}
           disabled={isTraining}
-          style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+          style={isRunning ? { background: "#f39c12", color: "#000" } : {}}
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
         </button>
@@ -71,3 +74,37 @@ export function ControlPanel({
     </div>
   );
 }
+
+const Spinner = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ marginRight: "8px" }}
+    aria-hidden="true"
+  >
+    <style>
+      {`@keyframes spin { 100% { transform: rotate(360deg); } }`}
+    </style>
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+      opacity="0.25"
+    />
+    <path
+      d="M12 2a10 10 0 0 1 10 10"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+      style={{
+        transformOrigin: "center",
+        animation: "spin 1s linear infinite",
+      }}
+    />
+  </svg>
+);
