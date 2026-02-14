@@ -10,6 +10,8 @@ export function ControlPanel({
   isRunning,
   simulationEnabled = true,
 }) {
+  const isTrainDisabled = isTraining || dataCount === 0;
+
   return (
     <div
       class="control-panel"
@@ -25,6 +27,12 @@ export function ControlPanel({
         alignItems: "center",
       }}
     >
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
       <span aria-live="polite">Data Points: {dataCount}</span>
 
       <div
@@ -41,6 +49,7 @@ export function ControlPanel({
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Select Training Method"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -50,13 +59,46 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
+
+        <span
+          title={dataCount === 0 ? "Generate data first" : ""}
+          style={{ cursor: isTrainDisabled ? "not-allowed" : "default" }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+          <button
+            onClick={onTrain}
+            disabled={isTrainDisabled}
+            aria-busy={isTraining}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              pointerEvents: isTrainDisabled ? "none" : "auto",
+            }}
+          >
+            {isTraining && (
+               <svg
+                 viewBox="0 0 50 50"
+                 style={{
+                   width: '1em',
+                   height: '1em',
+                   animation: 'spin 1s linear infinite'
+                 }}
+               >
+                 <circle
+                   cx="25"
+                   cy="25"
+                   r="20"
+                   fill="none"
+                   stroke="currentColor"
+                   strokeWidth="5"
+                   strokeDasharray="80"
+                   strokeDashoffset="0"
+                 ></circle>
+               </svg>
+            )}
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
