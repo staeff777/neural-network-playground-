@@ -41,6 +41,7 @@ export function ControlPanel({
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Trainer Type"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -50,20 +51,53 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
+        <span
+          title={dataCount === 0 ? "Generate data first" : isTraining ? "Training in progress" : ""}
+          style={{ display: "inline-flex" }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+            style={isTraining || dataCount === 0 ? { pointerEvents: "none" } : {}}
+          >
+            {isTraining ? (
+              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  <animateTransform
+                    attributeName="transform"
+                    attributeType="XML"
+                    type="rotate"
+                    from="0 12 12"
+                    to="360 12 12"
+                    dur="1s"
+                    repeatCount="indefinite"
+                  />
+                </svg>
+                Searching...
+              </span>
+            ) : (
+              "2. Train"
+            )}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
         <button
           onClick={onRun}
           disabled={isTraining}
-          style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+          style={isRunning ? { background: "#f39c12", color: "black" } : {}}
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
         </button>
