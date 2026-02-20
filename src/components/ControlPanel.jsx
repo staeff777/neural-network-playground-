@@ -41,6 +41,7 @@ export function ControlPanel({
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Trainer Type"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -50,19 +51,27 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
+        <span
+          title={dataCount === 0 ? "Add data points to train" : ""}
+          style={dataCount === 0 ? { cursor: "not-allowed" } : {}}
         >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+            style={dataCount === 0 ? { pointerEvents: "none" } : {}}
+          >
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
         <button
           onClick={onRun}
           disabled={isTraining}
+          aria-pressed={isRunning}
+          aria-label={isRunning ? "Stop Simulation" : "Start Simulation"}
           style={isRunning ? { background: "#f39c12", color: "white" } : {}}
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
