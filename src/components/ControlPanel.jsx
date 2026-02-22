@@ -41,6 +41,7 @@ export function ControlPanel({
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Trainer Type"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -54,8 +55,40 @@ export function ControlPanel({
           onClick={onTrain}
           disabled={isTraining || dataCount === 0}
           aria-busy={isTraining}
+          style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
+          {isTraining ? (
+            <>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+                  opacity=".25"
+                  fill="currentColor"
+                />
+                <path
+                  d="M12,4a8,8,0,0,1,7.89,6.7A1.5,1.5,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.5,1.5,0,0,0,1.48-1.75A8,8,0,0,1,12,4Z"
+                  fill="currentColor"
+                >
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    dur="0.75s"
+                    values="0 12 12;360 12 12"
+                    repeatCount="indefinite"
+                  />
+                </path>
+              </svg>
+              Searching...
+            </>
+          ) : (
+            "2. Train"
+          )}
         </button>
       </div>
 
