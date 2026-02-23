@@ -22,6 +22,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
             ? collapseModelArchitectureByDefault
             : false;
     const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
+    const [isFocused, setIsFocused] = useState(false);
 
     // Config
     const width = 400;
@@ -144,11 +145,25 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                     height={boxHeight}
                     rx="15"
                     fill="transparent"
-                    stroke="#333"
-                    strokeWidth="2"
-                    style={{ cursor: 'pointer' }}
+                    stroke={isFocused ? "#646cff" : "#333"}
+                    strokeWidth={isFocused ? "3" : "2"}
+                    style={{ cursor: 'pointer', outline: 'none' }}
                     onClick={() => setShowDetails((v) => !v)}
-                />
+                    role="button"
+                    tabIndex={0}
+                    aria-label={showDetails ? "Collapse model architecture" : "Expand model architecture"}
+                    aria-expanded={showDetails}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setShowDetails((v) => !v);
+                        }
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                >
+                    <title>{showDetails ? "Collapse details" : "Expand details"}</title>
+                </rect>
 
                 {/* CONNECTIONS */}
                 {/* Layer 0 -> 1 (Weights 1) */}
@@ -298,7 +313,7 @@ function MatrixDisplay({ data }) {
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data[0].length}, 1fr)`, gap: '2px', border: '1px solid #999', padding: '2px', background: '#eee' }}>
             {data.map((row, i) =>
                 row.map((val, j) => (
-                    <div key={`${i} -${j} `} style={{ padding: '2px 4px', background: '#fff', fontSize: '10px', textAlign: 'center' }}>
+                    <div key={`${i}-${j}`} style={{ padding: '2px 4px', background: '#fff', fontSize: '10px', textAlign: 'center' }}>
                         {val.toFixed(2)}
                     </div>
                 ))

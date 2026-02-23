@@ -1,0 +1,3 @@
+## 2025-02-14 - Interactive SVG Accessibility
+**Learning:** Interactive SVG elements (like `<rect>` or `<g>`) do not have native keyboard accessibility or focus styles. Relying solely on `onClick` makes them inaccessible to keyboard and screen reader users.
+**Action:** When making SVG elements interactive, always add `role="button"`, `tabIndex={0}`, an `aria-label` describing the action, and an `onKeyDown` handler for "Enter" and "Space". Additionally, manually manage focus state (e.g., via `onFocus`/`onBlur` setting a state to change `stroke` color) as default focus rings may not render correctly on SVG shapes.
