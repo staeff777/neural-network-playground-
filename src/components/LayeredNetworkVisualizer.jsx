@@ -22,6 +22,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
             ? collapseModelArchitectureByDefault
             : false;
     const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
+    const [isFocused, setIsFocused] = useState(false);
 
     // Config
     const width = 400;
@@ -72,6 +73,20 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
 
     const isNodeSelected = (lIdx, nIdx) => selectedNode && selectedNode.layer === lIdx && selectedNode.index === nIdx;
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setShowDetails((v) => !v);
+        }
+    };
+
+    const handleFormulaKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setShowMatrices(true);
+        }
+    }
+
     if (showMatrices) {
         return (
             <div
@@ -115,6 +130,15 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                         fontStyle: 'italic', color: '#777', padding: '5px'
                     }}
                     onClick={() => setShowMatrices(false)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setShowMatrices(false);
+                        }
+                    }}
+                    aria-label="Back to network visualization"
                 >
                     Back to Network
                 </div>
@@ -144,14 +168,20 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                     height={boxHeight}
                     rx="15"
                     fill="transparent"
-                    stroke="#333"
-                    strokeWidth="2"
+                    stroke={isFocused ? "#2196f3" : "#333"}
+                    strokeWidth={isFocused ? 3 : 2}
                     style={{ cursor: 'pointer' }}
                     onClick={() => setShowDetails((v) => !v)}
+                    role="button"
+                    tabindex="0"
+                    aria-label={showDetails ? "Collapse neural network activity" : "Expand neural network activity"}
+                    aria-expanded={showDetails}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                 />
 
                 {/* CONNECTIONS */}
-                {/* Layer 0 -> 1 (Weights 1) */}
                 {showDetails && weights1.map((row, j) => (
                     row.map((w, i) => {
                         const highlighted = isConnHighlighted(0, i, 1, j);
@@ -280,6 +310,10 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
                             }}
                             onClick={() => setShowMatrices(true)}
                             title="Click to view matrices"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="View network parameter matrices"
+                            onKeyDown={handleFormulaKeyDown}
                         >
                             {formula}
                         </div>
