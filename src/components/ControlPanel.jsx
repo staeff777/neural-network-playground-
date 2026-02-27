@@ -37,10 +37,13 @@ export function ControlPanel({
           alignItems: "center",
         }}
       >
+        <label htmlFor="trainer-type" style={{ fontSize: "0.9em", color: "#555", marginRight: "5px" }}>Trainer:</label>
         <select
+          id="trainer-type"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
+          aria-label="Trainer Type"
           style={{
             padding: "8px",
             borderRadius: "4px",
@@ -50,20 +53,36 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
-        >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+        <span title={dataCount === 0 ? "Generate data points first to train" : ""}>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              pointerEvents: (isTraining || dataCount === 0) ? "none" : "auto",
+            }}
+          >
+            {isTraining && (
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="16 32" strokeLinecap="round">
+                  <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
+                </circle>
+              </svg>
+            )}
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
         <button
           onClick={onRun}
           disabled={isTraining}
-          style={isRunning ? { background: "#f39c12", color: "white" } : {}}
+          aria-pressed={isRunning}
+          style={isRunning ? { background: "#f39c12", color: "#000" } : {}}
         >
           3. Simulation {isRunning ? "Stop" : "Start"}
         </button>
