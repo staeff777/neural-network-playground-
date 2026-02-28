@@ -22,6 +22,7 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
             ? collapseModelArchitectureByDefault
             : false;
     const [showDetails, setShowDetails] = useState(!resolvedCollapseByDefault);
+    const [isFocused, setIsFocused] = useState(false);
 
     // Config
     const width = 400;
@@ -138,16 +139,28 @@ export function LayeredNetworkVisualizer({ model, inputs, inputLabels, output, o
 
                 {/* The Box (Solid Border) */}
                 <rect
+                    role="button"
+                    tabIndex="0"
+                    aria-label={showDetails ? "Collapse model architecture" : "Expand model architecture"}
+                    aria-expanded={showDetails}
                     x={boxLeft}
                     y={centerY - boxHeight / 2}
                     width={boxWidth}
                     height={boxHeight}
                     rx="15"
                     fill="transparent"
-                    stroke="#333"
-                    strokeWidth="2"
-                    style={{ cursor: 'pointer' }}
+                    stroke={isFocused ? "#3b82f6" : "#333"}
+                    strokeWidth={isFocused ? "3" : "2"}
+                    style={{ cursor: 'pointer', outline: 'none' }}
                     onClick={() => setShowDetails((v) => !v)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setShowDetails((v) => !v);
+                        }
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                 />
 
                 {/* CONNECTIONS */}
