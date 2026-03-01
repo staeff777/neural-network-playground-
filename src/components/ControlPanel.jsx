@@ -38,6 +38,7 @@ export function ControlPanel({
         }}
       >
         <select
+          aria-label="Trainer Strategy"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -50,13 +51,46 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
+        <span
+          title={dataCount === 0 ? "Generate data first to train" : ""}
+          style={{ display: "inline-block" }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+            style={
+              isTraining
+                ? { display: "inline-flex", alignItems: "center", gap: "8px" }
+                : { pointerEvents: dataCount === 0 ? "none" : "auto" }
+            }
+          >
+            {isTraining && (
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeDasharray="31.4 31.4"
+                  strokeLinecap="round"
+                  fill="none"
+                >
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="0 12 12"
+                    to="360 12 12"
+                    dur="1s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              </svg>
+            )}
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (

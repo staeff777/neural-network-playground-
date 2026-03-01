@@ -1,0 +1,3 @@
+## 2024-03-01 - Control Panel Accessibility and Feedback
+**Learning:** Native `disabled` buttons swallow pointer events, making it impossible to trigger hover-based tooltips (`title` attribute).
+**Action:** Wrapped disabled buttons in a `<span>` element with `display: inline-block` and applied `pointer-events: none` to the button itself when disabled, allowing the wrapper to catch the hover event and display the tooltip explaining why the button is disabled. Also added `aria-busy` to the training button and an `aria-hidden` inline SVG loading spinner using `animateTransform` to provide visual feedback during synchronous/asynchronous search operations without adding external CSS dependencies. Added `aria-label` to the trainer strategy select for screen reader context.
