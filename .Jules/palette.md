@@ -1,0 +1,3 @@
+## 2024-11-20 - Adding Tooltips and SVG Loaders on Disabled Interactive Elements
+**Learning:** Native `title` tooltips on disabled interactive buttons might not trigger hover events in all browsers. Using inline SVGs with `animateTransform` is a reliable way to implement lightweight spinning loaders without writing or modifying external CSS styles, keeping changes self-contained.
+**Action:** When adding tooltips to disabled elements, wrap the disabled element in a `<span title="...">` container and apply `pointerEvents: 'none'` to the disabled element itself so the wrapper handles the hover interaction. Use inline SVGs for self-contained visual interactions.

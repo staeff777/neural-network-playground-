@@ -37,7 +37,11 @@ export function ControlPanel({
           alignItems: "center",
         }}
       >
+        <label htmlFor="trainer-type-select" style={{ fontSize: "0.9em", fontWeight: 500 }}>
+          Trainer:
+        </label>
         <select
+          id="trainer-type-select"
           value={trainerType}
           onChange={(e) => onTrainerTypeChange(e.target.value)}
           disabled={isTraining}
@@ -50,13 +54,31 @@ export function ControlPanel({
           <option value="exhaustive">Grid Search </option>
           <option value="random">Adaptive Random </option>
         </select>
-        <button
-          onClick={onTrain}
-          disabled={isTraining || dataCount === 0}
-          aria-busy={isTraining}
+        <span
+          title={dataCount === 0 ? "Generate data points first to enable training." : ""}
+          style={{ display: "inline-block" }}
         >
-          {isTraining ? "Searching..." : "2. Train"}
-        </button>
+          <button
+            onClick={onTrain}
+            disabled={isTraining || dataCount === 0}
+            aria-busy={isTraining}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              pointerEvents: (isTraining || dataCount === 0) ? "none" : "auto",
+            }}
+          >
+            {isTraining && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56">
+                  <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
+                </path>
+              </svg>
+            )}
+            {isTraining ? "Searching..." : "2. Train"}
+          </button>
+        </span>
       </div>
 
       {simulationEnabled && (
