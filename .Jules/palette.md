@@ -1,0 +1,3 @@
+## 2025-03-05 - Control Panel UX Polish
+**Learning:** Disabled buttons do not trigger hover events, which prevents native `title` tooltips from explaining why an action is unavailable. Additionally, the 'Stop' simulation state failed WCAG AA color contrast when using white text on an orange background (#f39c12).
+**Action:** Wrapped the disabled 'Train' button in a `<span>` to capture hover events (with `pointer-events: none` on the button itself) to explain its state. Updated the 'Stop' button text to black (#000) for contrast compliance. Added an inline SVG spinner for the training state to provide immediate visual feedback.
